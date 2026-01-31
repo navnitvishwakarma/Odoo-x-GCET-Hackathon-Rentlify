@@ -62,9 +62,56 @@ const getMyProducts = async (req, res, next) => {
     }
 };
 
+const updateProduct = async (req, res, next) => {
+    try {
+        const vendor = await Vendor.findOne({ user: req.user._id });
+        if (!vendor) return errorResponse(res, 404, 'Vendor profile not found');
+
+        let product = await Product.findById(req.params.id);
+        if (!product) return errorResponse(res, 404, 'Product not found');
+
+        // Check ownership
+        if (product.vendor.toString() !== vendor._id.toString()) {
+            return errorResponse(res, 403, 'Not authorized to update this product');
+        }
+
+        product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+            runValidators: true,
+        });
+
+        successResponse(res, 200, 'Product updated', product);
+    } catch (error) {
+        next(error);
+    }
+};
+
+const deleteProduct = async (req, res, next) => {
+    try {
+        const vendor = await Vendor.findOne({ user: req.user._id });
+        if (!vendor) return errorResponse(res, 404, 'Vendor profile not found');
+
+        const product = await Product.findById(req.params.id);
+        if (!product) return errorResponse(res, 404, 'Product not found');
+
+        // Check ownership
+        if (product.vendor.toString() !== vendor._id.toString()) {
+            return errorResponse(res, 403, 'Not authorized to delete this product');
+        }
+
+        await Product.findByIdAndDelete(req.params.id);
+
+        successResponse(res, 200, 'Product deleted');
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     createProduct,
     getProducts,
     getProduct,
     getMyProducts,
+    updateProduct,
+    deleteProduct,
 };

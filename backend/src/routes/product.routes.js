@@ -13,8 +13,10 @@ router.route('/')
 router.get('/my-products', auth, authorize('vendor'), productController.getMyProducts);
 
 router.route('/:id')
-    .get(productController.getProduct);
+    .get(productController.getProduct)
+    .put(auth, authorize('vendor'), validate(productValidation.createProduct), productController.updateProduct)
+    .delete(auth, authorize('vendor'), productController.deleteProduct);
 
-router.get('/my-products', auth, authorize('vendor'), productController.getMyProducts);
+
 
 module.exports = router;

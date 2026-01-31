@@ -45,6 +45,8 @@ const getMe = async (req, res) => {
     successResponse(res, 200, 'User profile', { user: req.user });
 };
 
+
+
 module.exports = {
     register,
     login,
