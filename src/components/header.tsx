@@ -97,6 +97,13 @@ export function Header() {
             </>
           ) : (
             <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                className="font-medium text-muted-foreground hover:text-primary hidden sm:inline-flex"
+                onClick={() => navigate('/vendor/signup')}
+              >
+                Become a Vendor
+              </Button>
               <Link to="/login">
                 <Button variant="ghost" className="font-medium text-muted-foreground hover:text-primary">
                   Login

@@ -30,6 +30,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
+    // Check local storage on mount
+    const storedLoggedIn = localStorage.getItem("isLoggedIn");
+    const storedRole = localStorage.getItem("role") as UserRole;
+
+    if (storedLoggedIn === "true" && storedRole) {
+      setUser({
+        id: 'mock-user-id',
+        name: 'Demo User',
+        email: 'demo@rentlify.com',
+        role: storedRole,
+        status: 'active'
+      });
+    }
+
     // Apply dark mode class to document
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -49,13 +63,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: email.split('@')[0],
       email,
       role,
-      status: role === 'vendor' ? 'active' : 'active', // Default to active for login in this demo
+      status: role === 'vendor' ? 'active' : 'active',
     };
     setUser(mockUser);
+    localStorage.setItem("isLoggedIn", "true");
+    localStorage.setItem("role", role || 'customer');
   };
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("role");
   };
 
   const signup = (name: string, email: string, password: string, role: UserRole) => {
@@ -68,6 +86,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       status: role === 'vendor' ? 'pending' : 'active',
     };
     setUser(mockUser);
+    localStorage.setItem("isLoggedIn", "true");
+    localStorage.setItem("role", role || 'customer');
   };
 
   return (

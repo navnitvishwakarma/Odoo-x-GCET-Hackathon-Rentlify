@@ -15,9 +15,10 @@ import { useProduct } from '@/hooks/useProducts';
 import { useCreateBooking } from '@/hooks/useBookings';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { InvoicePreview } from '@/components/invoice/InvoicePreview';
 
 export function BookingPage() {
-  const { productId } = useParams();
+  const { id: productId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: product, isLoading } = useProduct(productId);
@@ -29,6 +30,7 @@ export function BookingPage() {
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [showInvoice, setShowInvoice] = useState(false);
 
   if (isLoading) {
     return (
@@ -137,7 +139,7 @@ export function BookingPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Start Date</Label>
-                    <Popover>
+                    <Popover modal={true}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
@@ -147,12 +149,13 @@ export function BookingPage() {
                           {startDate ? format(startDate, 'PPP') : 'Pick a date'}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent className="w-auto p-0 z-50 bg-white dark:bg-zinc-950 border shadow-md" align="start">
                         <Calendar
                           mode="single"
                           selected={startDate}
                           onSelect={setStartDate}
-                          disabled={(date) => date < new Date()}
+                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                          initialFocus
                         />
                       </PopoverContent>
                     </Popover>
@@ -160,7 +163,7 @@ export function BookingPage() {
 
                   <div className="space-y-2">
                     <Label>End Date</Label>
-                    <Popover>
+                    <Popover modal={true}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
@@ -170,12 +173,13 @@ export function BookingPage() {
                           {endDate ? format(endDate, 'PPP') : 'Pick a date'}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent className="w-auto p-0 z-50 bg-white dark:bg-zinc-950 border shadow-md" align="start">
                         <Calendar
                           mode="single"
                           selected={endDate}
                           onSelect={setEndDate}
                           disabled={(date) => !startDate || date < startDate}
+                          initialFocus
                         />
                       </PopoverContent>
                     </Popover>
@@ -323,9 +327,18 @@ export function BookingPage() {
                   <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
                     Back
                   </Button>
-                  <Button className="flex-1" size="lg" onClick={handleConfirm}>
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Confirm & Pay
+                  <Button className="flex-1" size="lg" onClick={() => setShowInvoice(true)} disabled={createBookingMutation.isPending}>
+                    {createBookingMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Review & Pay
+                      </>
+                    )}
                   </Button>
                 </div>
               </CardContent>
@@ -422,6 +435,28 @@ export function BookingPage() {
           </Card>
         </div>
       </div>
+      {/* Invoice Preview Modal */}
+      {product && startDate && endDate && (
+        <InvoicePreview
+          isOpen={showInvoice}
+          onClose={() => setShowInvoice(false)}
+          onConfirm={handleConfirm}
+          isProcessing={createBookingMutation.isPending}
+          bookingDetails={{
+            productName: product.name,
+            productImage: product.images[0],
+            vendorName: product.vendorName,
+            vendorLocation: product.location, // Mocking location as simpler field
+            customerName: user?.name || 'Guest Customer',
+            customerEmail: user?.email || 'guest@example.com',
+            startDate: startDate,
+            endDate: endDate,
+            duration: Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)),
+            pricePerDay: product.price.perDay,
+            securityDeposit: product.securityDeposit,
+          }}
+        />
+      )}
     </div>
   );
 }

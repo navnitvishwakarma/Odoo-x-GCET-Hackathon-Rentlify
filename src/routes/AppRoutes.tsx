@@ -28,6 +28,7 @@ import { AdminSettingsPage } from '@/pages/admin/Settings';
 
 // Vendor Pages
 import { VendorDashboardPage } from '@/pages/vendor/Dashboard';
+import VendorSignup from '@/pages/vendor/VendorSignup';
 
 export function AppRoutes() {
     return (
@@ -39,6 +40,8 @@ export function AppRoutes() {
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/verify-email" element={<VerifyEmailPage />} />
+                {/* Specific Vendor Signup Route */}
+                <Route path="/vendor/signup" element={<VendorSignup />} />
             </Route>
 
             {/* Main Layout (Customer / Public) */}
@@ -77,6 +80,7 @@ export function AppRoutes() {
                 </ProtectedRoute>
             }>
                 <Route index element={<VendorDashboardPage />} />
+                <Route path="dashboard" element={<VendorDashboardPage />} />
             </Route>
 
             {/* Catch all */}

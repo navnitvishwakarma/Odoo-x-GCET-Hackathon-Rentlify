@@ -1,25 +1,31 @@
-<<<<<<< HEAD
+# Rentlify – Frontend Prototype
 
-  # Design Rentlify Web App
+## Tech Stack
+- **Vite**
+- **React**
+- **TypeScript**
 
-  This is a code bundle for Design Rentlify Web App. The original project is available at https://www.figma.com/design/QBGoeTTEMptAuQ7zOBfryC/Design-Rentlify-Web-App.
+## Status
+- **Frontend completed**
+- **Backend planned (Node / Odoo)**
 
-  ## Running the code
+## Features
+- **Login & Signup UI**: Complete authentication flows with persistent mock state.
+- **Vendor Onboarding**: seamless "Become a Vendor" registration process.
+- **Vendor Dashboard**: Comprehensive dashboard for managing products and bookings.
+- **Rental Platform UI**: Modern, responsive marketplace interface.
 
-  Run `npm i` to install the dependencies.
+## Getting Started
 
-  Run `npm run dev` to start the development server.
-  
-=======
-# Odoo x GCET Hackathon - Rentlify
+1.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-A rental management platform built with Odoo.
+2.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
 
-## Project Structure
-
-- **backend/**: Backend services
-- **front-end/**: Frontend applications
-  - **admin/**: Admin dashboard
-  - **customers/**: Customer interface
-  - **vendors/**: Vendor interface
->>>>>>> 0d8f37b3e1c72dd999b6aea5594197ceed9e3edc
+3.  **Open in browser:**
+    Navigate to `http://localhost:5173`
