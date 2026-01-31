@@ -1,0 +1,50 @@
+﻿src/App.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/App.tsx(3,10): error TS2305: Module '"@/context/AuthContext"' has no exported member 'AppProvider'.
+src/components/footer.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/header.tsx(6,3): error TS6133: 'Menu' is declared but its value is never read.
+src/components/header.tsx(34,20): error TS6133: 'setLocation' is declared but its value is never read.
+src/components/layout/AdminLayout.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/layout/MainLayout.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/layout/VendorLayout.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/product-card.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/context/AuthContext.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/context/AuthContext.tsx(43,33): error TS6133: 'password' is declared but its value is never read.
+src/context/AuthContext.tsx(58,48): error TS6133: 'password' is declared but its value is never read.
+src/pages/admin/Dashboard.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/admin/Dashboard.tsx(18,3): error TS6133: 'Settings' is declared but its value is never read.
+src/pages/admin/Dashboard.tsx(29,1): error TS6133: 'Separator' is declared but its value is never read.
+src/pages/admin/Dashboard.tsx(45,42): error TS6133: 'LineChart' is declared but its value is never read.
+src/pages/admin/Dashboard.tsx(45,53): error TS6133: 'Line' is declared but its value is never read.
+src/pages/admin/Dashboard.tsx(52,36): error TS6133: 'onNavigate' is declared but its value is never read.
+src/pages/admin/Dashboard.tsx(53,9): error TS6133: 'user' is declared but its value is never read.
+src/pages/auth/Login.tsx(7,1): error TS6192: All imports in import declaration are unused.
+src/pages/auth/Register.tsx(8,31): error TS6133: 'Check' is declared but its value is never read.
+src/pages/customer/Booking.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/customer/Booking.tsx(8,1): error TS6133: 'Badge' is declared but its value is never read.
+src/pages/customer/BookingConfirmation.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/customer/Dashboard.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/customer/Dashboard.tsx(6,1): error TS6192: All imports in import declaration are unused.
+src/pages/customer/Dashboard.tsx(17,3): error TS6133: 'Calendar' is declared but its value is never read.
+src/pages/customer/Home.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/customer/Home.tsx(12,3): error TS6133: 'Clock' is declared but its value is never read.
+src/pages/customer/Home.tsx(13,3): error TS6133: 'TrendingUp' is declared but its value is never read.
+src/pages/customer/Home.tsx(18,1): error TS6133: 'ImageWithFallback' is declared but its value is never read.
+src/pages/customer/Listings.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/customer/ProductDetail.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/vendor/Dashboard.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/vendor/Dashboard.tsx(22,3): error TS6133: 'Users' is declared but its value is never read.
+src/pages/vendor/Dashboard.tsx(23,3): error TS6133: 'BarChart3' is declared but its value is never read.
+src/pages/vendor/Dashboard.tsx(35,37): error TS6133: 'onNavigate' is declared but its value is never read.
+src/pages/vendor/Dashboard.tsx(36,9): error TS6133: 'user' is declared but its value is never read.
+src/pages/vendor/Dashboard.tsx(43,9): error TS6133: 'pendingBookings' is declared but its value is never read.
+src/pages/vendor/Dashboard.tsx(47,9): error TS6133: 'monthlyEarnings' is declared but its value is never read.
+src/routes/AppRoutes.tsx(32,44): error TS2741: Property 'onNavigate' is missing in type '{}' but required in type 'LoginPageProps'.
+src/routes/AppRoutes.tsx(33,45): error TS2741: Property 'onNavigate' is missing in type '{}' but required in type 'SignupPageProps'.
+src/routes/AppRoutes.tsx(37,43): error TS2741: Property 'onNavigate' is missing in type '{}' but required in type 'HomePageProps'.
+src/routes/AppRoutes.tsx(38,51): error TS2741: Property 'onNavigate' is missing in type '{}' but required in type 'ListingsPageProps'.
+src/routes/AppRoutes.tsx(39,61): error TS2739: Type '{}' is missing the following properties from type 'ProductDetailPageProps': productId, onNavigate
+src/routes/AppRoutes.tsx(48,58): error TS2739: Type '{}' is missing the following properties from type 'BookingPageProps': productId, onNavigate
+src/routes/AppRoutes.tsx(49,67): error TS2741: Property 'onNavigate' is missing in type '{}' but required in type 'BookingConfirmationPageProps'.
+src/routes/AppRoutes.tsx(50,54): error TS2741: Property 'onNavigate' is missing in type '{}' but required in type 'CustomerDashboardPageProps'.
+src/routes/AppRoutes.tsx(61,40): error TS2741: Property 'onNavigate' is missing in type '{}' but required in type 'AdminDashboardPageProps'.
+src/routes/AppRoutes.tsx(71,40): error TS2741: Property 'onNavigate' is missing in type '{}' but required in type 'VendorDashboardPageProps'.

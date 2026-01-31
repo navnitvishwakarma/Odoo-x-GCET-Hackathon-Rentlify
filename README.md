@@ -1,8 +1,8 @@
 <<<<<<< HEAD
 
-  # Design RentEarn Web App
+  # Design Rentlify Web App
 
-  This is a code bundle for Design RentEarn Web App. The original project is available at https://www.figma.com/design/QBGoeTTEMptAuQ7zOBfryC/Design-RentEarn-Web-App.
+  This is a code bundle for Design Rentlify Web App. The original project is available at https://www.figma.com/design/QBGoeTTEMptAuQ7zOBfryC/Design-Rentlify-Web-App.
 
   ## Running the code
 
