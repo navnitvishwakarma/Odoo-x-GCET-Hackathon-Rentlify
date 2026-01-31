@@ -1,11 +1,14 @@
 import { motion, AnimatePresence } from "motion/react";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
-import { Heart, Search } from "lucide-react";
-import { useState } from "react";
+import { Heart, Search, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/app/components/ui/badge";
+import { api } from "@/app/services/api";
+import { forwardRef } from "react";
+import { FilterState } from "./filter-sidebar";
 
 interface Product {
-  id: number;
+  id: string; // Changed from number to string for MongoDB ObjectId
   name: string;
   category: string;
   image: string;
@@ -14,161 +17,6 @@ interface Product {
   weeklyPrice: number;
   condition: string;
 }
-
-const products: Product[] = [
-  {
-    id: 1,
-    name: "Gaming Laptop Pro",
-    category: "Electronics",
-    image: "https://images.unsplash.com/photo-1673431738089-c4fc9c2e96a7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYXB0b3AlMjBjb21wdXRlciUyMGRlc2slMjBzZXR1cHxlbnwxfHx8fDE3Njk4Mzk1OTV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    hourlyPrice: 120,
-    dailyPrice: 850,
-    weeklyPrice: 4500,
-    condition: "New",
-  },
-  {
-    id: 2,
-    name: "Premium Audio Speaker",
-    category: "Electronics",
-    image: "https://images.unsplash.com/photo-1758411898478-4f7e70d533d9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcmVtaXVtJTIwc3BlYWtlciUyMGF1ZGlvJTIwc3lzdGVtfGVufDF8fHx8MTc2OTgzOTU5NXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    hourlyPrice: 80,
-    dailyPrice: 550,
-    weeklyPrice: 2800,
-    condition: "New",
-  },
-  {
-    id: 3,
-    name: "DSLR Camera Kit",
-    category: "Electronics",
-    image: "https://images.unsplash.com/photo-1532272278764-53cd1fe53f72?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBjYW1lcmElMjBwaG90b2dyYXBoeXxlbnwxfHx8fDE3Njk3NTEwMjh8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    hourlyPrice: 100,
-    dailyPrice: 700,
-    weeklyPrice: 3800,
-    condition: "New",
-  },
-  {
-    id: 4,
-    name: "Smart LED TV 55\"",
-    category: "Electronics",
-    image: "https://images.unsplash.com/photo-1579894098530-d369f6378042?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0ZWxldmlzaW9uJTIwdHYlMjBzY3JlZW4lMjBtb2Rlcm58ZW58MXx8fHwxNzY5ODM5NTk2fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    hourlyPrice: 90,
-    dailyPrice: 650,
-    weeklyPrice: 3500,
-    condition: "New",
-  },
-  {
-    id: 5,
-    name: "Washing Machine",
-    category: "Home Appliances",
-    image: "https://images.unsplash.com/photo-1624381987697-3f93d65ddeea?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3YXNoaW5nJTIwbWFjaGluZSUyMGxhdW5kcnl8ZW58MXx8fHwxNzY5Nzg3ODgzfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    hourlyPrice: 70,
-    dailyPrice: 450,
-    weeklyPrice: 2300,
-    condition: "New",
-  },
-  {
-    id: 6,
-    name: "Microwave Oven",
-    category: "Kitchen",
-    image: "https://images.unsplash.com/photo-1608384156808-418b5c079968?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaWNyb3dhdmUlMjBvdmVuJTIwa2l0Y2hlbnxlbnwxfHx8fDE3Njk4MzYxNjd8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    hourlyPrice: 40,
-    dailyPrice: 250,
-    weeklyPrice: 1300,
-    condition: "Like New",
-  },
-  {
-    id: 7,
-    name: "Air Conditioner 1.5 Ton",
-    category: "Home Appliances",
-    image: "https://images.unsplash.com/photo-1759772238012-9d5ad59ae637?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhaXIlMjBjb25kaXRpb25lciUyMGNvb2xpbmd8ZW58MXx8fHwxNzY5ODM5NTk3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    hourlyPrice: 60,
-    dailyPrice: 400,
-    weeklyPrice: 2000,
-    condition: "New",
-  },
-  {
-    id: 8,
-    name: "Robot Vacuum Cleaner",
-    category: "Home Appliances",
-    image: "https://images.unsplash.com/photo-1653990480360-31a12ce9723e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx2YWN1dW0lMjBjbGVhbmVyJTIwYXBwbGlhbmNlfGVufDF8fHx8MTc2OTgzOTU5N3ww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    hourlyPrice: 50,
-    dailyPrice: 350,
-    weeklyPrice: 1800,
-    condition: "New",
-  },
-  {
-    id: 9,
-    name: "Smart Refrigerator",
-    category: "Kitchen",
-    image: "https://images.unsplash.com/photo-1758488438758-5e2eedf769ce?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZWZyaWdlcmF0b3IlMjBraXRjaGVuJTIwbW9kZXJufGVufDF8fHx8MTc2OTgzNzYwOXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    hourlyPrice: 100,
-    dailyPrice: 700,
-    weeklyPrice: 3800,
-    condition: "New",
-  },
-  {
-    id: 10,
-    name: "Luxury Velvet Sofa",
-    category: "Living Room",
-    image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=1080&auto=format&fit=crop",
-    hourlyPrice: 150,
-    dailyPrice: 1200,
-    weeklyPrice: 6500,
-    condition: "New",
-  },
-  {
-    id: 11,
-    name: "Minimalist Coffee Table",
-    category: "Living Room",
-    image: "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?q=80&w=1080&auto=format&fit=crop",
-    hourlyPrice: 40,
-    dailyPrice: 300,
-    weeklyPrice: 1800,
-    condition: "Like New",
-  },
-  {
-    id: 12,
-    name: "Royal King Size Bed",
-    category: "Bedroom",
-    image: "https://images.unsplash.com/photo-1505693419148-ad30b35ceb3a?q=80&w=1080&auto=format&fit=crop",
-    hourlyPrice: 180,
-    dailyPrice: 1500,
-    weeklyPrice: 8500,
-    condition: "New",
-  },
-  {
-    id: 13,
-    name: "Modern Vanity Dresser",
-    category: "Bedroom",
-    image: "https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=1080&auto=format&fit=crop",
-    hourlyPrice: 60,
-    dailyPrice: 500,
-    weeklyPrice: 2800,
-    condition: "New",
-  },
-  {
-    id: 14,
-    name: "Scandinavian Dining Set",
-    category: "Dining",
-    image: "https://images.unsplash.com/photo-1617806118233-18e1de208582?q=80&w=1080&auto=format&fit=crop",
-    hourlyPrice: 200,
-    dailyPrice: 1800,
-    weeklyPrice: 10000,
-    condition: "New",
-  },
-  {
-    id: 15,
-    name: "Industrial Sideboard",
-    category: "Dining",
-    image: "https://images.unsplash.com/photo-1595428774223-ef52624120ec?q=80&w=1080&auto=format&fit=crop",
-    hourlyPrice: 50,
-    dailyPrice: 450,
-    weeklyPrice: 2500,
-    condition: "Like New",
-  },
-];
-
-import { forwardRef } from "react";
 
 const ProductCard = forwardRef<HTMLDivElement, {
   product: Product,
@@ -189,9 +37,9 @@ const ProductCard = forwardRef<HTMLDivElement, {
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
       onClick={onClick}
-      className="group cursor-pointer"
+      className="group cursor-pointer h-full"
     >
-      <div className="relative overflow-hidden rounded-3xl bg-card border border-border">
+      <div className="relative overflow-hidden rounded-3xl bg-card border border-border h-full flex flex-col">
         {/* Product Image */}
         <div className="aspect-[4/5] overflow-hidden relative">
           <ImageWithFallback
@@ -235,8 +83,6 @@ const ProductCard = forwardRef<HTMLDivElement, {
               whileTap={{ scale: 0.98 }}
               onClick={(e) => {
                 e.stopPropagation();
-                // We'd need a default duration or something if we want to rent from here
-                // For now just triggering the click
                 onClick?.();
               }}
               className="w-full py-2.5 bg-primary text-primary-foreground rounded-full transition-all shadow-lg text-sm font-medium"
@@ -258,25 +104,25 @@ const ProductCard = forwardRef<HTMLDivElement, {
         </div>
 
         {/* Product Info */}
-        <div className="p-6 space-y-3">
-          <div>
+        <div className="p-6 space-y-3 flex-1 flex flex-col">
+          <div className="flex-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
               {product.category}
             </p>
-            <h3 className="text-xl">{product.name}</h3>
+            <h3 className="text-xl line-clamp-2">{product.name}</h3>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-3 pt-2">
             <div>
               <p className="text-xs text-muted-foreground">Hourly</p>
-              <p className="text-base">₹{product.hourlyPrice}</p>
+              <p className="text-base font-semibold">₹{product.hourlyPrice}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Daily</p>
-              <p className="text-base">₹{product.dailyPrice}</p>
+              <p className="text-base font-semibold">₹{product.dailyPrice}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Weekly</p>
-              <p className="text-base">₹{product.weeklyPrice}</p>
+              <p className="text-base font-semibold">₹{product.weeklyPrice}</p>
             </div>
           </div>
         </div>
@@ -286,14 +132,52 @@ const ProductCard = forwardRef<HTMLDivElement, {
 });
 ProductCard.displayName = "ProductCard";
 
-import { FilterState } from "./filter-sidebar";
-
 export function ProductShowcase({ filters, onProductClick, onWishlistClick, onAddToCart }: {
   filters: FilterState,
   onProductClick?: () => void,
   onWishlistClick?: (product: any) => void,
   onAddToCart?: (product: any) => void
 }) {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        // Assuming the API returns { data: { products: [...] } } or similar standard response
+        // Need to verify backend response structure. Usually it's data.results or just data.
+        // I'll assume standard { data: [...] } or { results: [...] } based on common patterns.
+        const response = await api.get('/products');
+
+        // Map backend data to frontend model
+        // successResponse returns { success: true, data: [...] }
+        const productsList = response.data.data || [];
+
+        const mappedProducts = productsList.map((p: any) => ({
+          id: p._id || p.id,
+          name: p.name,
+          category: p.category,
+          image: p.images?.[0] || 'https://via.placeholder.com/300',
+          hourlyPrice: p.pricing?.hourly || 0,
+          dailyPrice: p.pricing?.daily || 0,
+          weeklyPrice: p.pricing?.weekly || 0,
+          condition: p.attributes?.find((a: any) => a.key === 'Condition')?.value || 'New'
+        }));
+
+        setProducts(mappedProducts);
+      } catch (err) {
+        console.error("Failed to fetch products:", err);
+        setError("Failed to load products. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
   const filteredProducts = products.filter((product) => {
     // Category Filter
     if (filters.categories.length > 0 && !filters.categories.includes(product.category)) {
@@ -305,12 +189,6 @@ export function ProductShowcase({ filters, onProductClick, onWishlistClick, onAd
       return false;
     }
 
-    // Duration Filter
-    if (filters.duration !== "Any") {
-      // In a real app, products might have different prices for different durations
-      // For now, we just assume all products match if they are not explicitly excluded
-    }
-
     // Condition Filter
     if (filters.conditions.length > 0 && !filters.conditions.includes(product.condition)) {
       return false;
@@ -318,6 +196,22 @@ export function ProductShowcase({ filters, onProductClick, onWishlistClick, onAd
 
     return true;
   });
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-32">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center py-20 text-red-500">
+        <p>{error}</p>
+      </div>
+    );
+  }
 
   return (
     <section className="py-2 px-6 md:px-0 max-w-[1400px] mx-auto">

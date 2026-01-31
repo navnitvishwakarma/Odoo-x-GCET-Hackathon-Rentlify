@@ -6,7 +6,8 @@ import {
     ShoppingBag,
     Settings,
     LogOut,
-    Store
+    Store,
+    User
 } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 
@@ -36,7 +37,7 @@ export function DashboardSidebar({ role }: SidebarProps) {
     return (
         <div className="w-64 border-r bg-card min-h-screen flex flex-col">
             <div className="h-16 flex items-center px-6 border-b">
-                <Link to="/" className="text-xl font-bold font-serif italic tracking-tight">Rentlify</Link>
+                <Link to={role === 'admin' ? '/admin' : '/vendor'} className="text-xl font-bold font-serif italic tracking-tight">Rentlify</Link>
                 <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase font-medium tracking-wider">
                     {role}
                 </span>

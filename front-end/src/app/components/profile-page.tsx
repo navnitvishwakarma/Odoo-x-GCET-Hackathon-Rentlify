@@ -1,21 +1,8 @@
 import { motion } from "motion/react";
 import {
-    User,
-    Package,
-    Calendar,
-    CreditCard,
-    MapPin,
-    Heart,
-    Download,
-    ArrowRight,
-    ShieldCheck,
-    ChevronRight,
-    LogOut,
-    Bell,
-    Settings,
-    Clock,
-    ExternalLink,
-    ChevronLeft
+    User, Package, Calendar, CreditCard, MapPin, Heart, Download,
+    ArrowRight, ShieldCheck, ChevronLeft, LogOut, Bell, Settings,
+    Clock, ExternalLink, Store, TrendingUp, DollarSign, LayoutDashboard
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/app/components/ui/button";
@@ -24,12 +11,19 @@ import { Separator } from "@/app/components/ui/separator";
 import { useAuth } from "@/app/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-type Section = "overview" | "rentals" | "orders" | "payments" | "addresses" | "wishlist";
+type Section = "overview" | "rentals" | "orders" | "payments" | "addresses" | "wishlist"
+    | "business" | "inventory" | "sales" | "earnings" | "settings";
 
-export function ProfilePage({ onBack, onTrackOrder }: { onBack: () => void; onTrackOrder?: () => void }) {
+export function ProfilePage({ onBack, onTrackOrder }: { onBack?: () => void; onTrackOrder?: () => void }) {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState<Section>("overview");
 
-    const sidebarItems = [
+    if (!user) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+
+    const isVendor = user.role === 'vendor';
+
+    const customerItems = [
         { id: "overview", label: "Overview", icon: User },
         { id: "rentals", label: "Active Rentals", icon: Clock },
         { id: "orders", label: "Past Purchases", icon: Package },
@@ -38,31 +32,42 @@ export function ProfilePage({ onBack, onTrackOrder }: { onBack: () => void; onTr
         { id: "wishlist", label: "Wishlist", icon: Heart },
     ];
 
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
+    const vendorItems = [
+        { id: "overview", label: "Overview", icon: LayoutDashboard },
+        { id: "business", label: "Business Info", icon: Store },
+        { id: "inventory", label: "My Inventory", icon: Package },
+        { id: "sales", label: "Sales & Orders", icon: TrendingUp },
+        { id: "earnings", label: "Earnings", icon: DollarSign },
+        { id: "settings", label: "Settings", icon: Settings },
+    ];
+
+    const sidebarItems = isVendor ? vendorItems : customerItems;
 
     const handleLogout = () => {
         logout();
         navigate("/login");
     };
 
-    if (!user) {
-        return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-    }
+    const handleBack = () => {
+        if (onBack) {
+            onBack();
+        } else {
+            navigate(isVendor ? "/vendor" : "/");
+        }
+    };
 
     return (
         <div className="min-h-screen bg-background">
             <div className="max-w-[1400px] mx-auto px-6 md:px-12 py-10">
                 <button
-                    onClick={onBack}
+                    onClick={handleBack}
                     className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
                 >
                     <ChevronLeft className="w-4 h-4" />
-                    <span>Back to home</span>
+                    <span>{isVendor ? "Back to Dashboard" : "Back to Home"}</span>
                 </button>
 
                 <div className="flex flex-col lg:flex-row gap-12">
-                    {/* Sidebar */}
                     <aside className="w-full lg:w-80 shrink-0 space-y-8">
                         <div className="p-8 rounded-3xl bg-secondary/30 border border-border flex flex-col items-center text-center space-y-4">
                             <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary text-3xl font-serif uppercase">
@@ -73,7 +78,9 @@ export function ProfilePage({ onBack, onTrackOrder }: { onBack: () => void; onTr
                                 <p className="text-sm text-muted-foreground italic">{user.email}</p>
                                 <p className="text-xs text-muted-foreground mt-1 capitalize">{user.role}</p>
                             </div>
-                            <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/10">Member</Badge>
+                            <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/10 capitalize">
+                                {isVendor ? 'Verified Vendor' : 'Member'}
+                            </Badge>
                         </div>
 
                         <nav className="space-y-1">
@@ -103,20 +110,138 @@ export function ProfilePage({ onBack, onTrackOrder }: { onBack: () => void; onTr
                         </nav>
                     </aside>
 
-                    {/* Main Content Area */}
                     <main className="flex-1 space-y-10">
-                        {activeSection === "overview" && <OverviewSection onTrackOrder={onTrackOrder} />}
-                        {activeSection === "rentals" && <RentalsSection onTrackOrder={onTrackOrder} />}
-                        {activeSection === "orders" && <OrdersSection />}
-                        {activeSection === "payments" && <PaymentsSection />}
-                        {activeSection === "addresses" && <AddressesSection />}
-                        {activeSection === "wishlist" && <WishlistSection />}
+                        {/* Customer Sections */}
+                        {!isVendor && (
+                            <>
+                                {activeSection === "overview" && <OverviewSection onTrackOrder={onTrackOrder} />}
+                                {activeSection === "rentals" && <RentalsSection onTrackOrder={onTrackOrder} />}
+                                {activeSection === "orders" && <OrdersSection />}
+                                {activeSection === "payments" && <PaymentsSection />}
+                                {activeSection === "addresses" && <AddressesSection />}
+                                {activeSection === "wishlist" && <WishlistSection />}
+                            </>
+                        )}
+
+                        {/* Vendor Sections */}
+                        {isVendor && (
+                            <>
+                                {activeSection === "overview" && <VendorOverview />}
+                                {activeSection === "business" && <VendorBusinessInfo />}
+                                {activeSection === "inventory" && <VendorInventory />}
+                                {activeSection === "sales" && <VendorSales />}
+                                {activeSection === "earnings" && <VendorEarnings />}
+                            </>
+                        )}
                     </main>
                 </div>
             </div>
         </div>
     );
 }
+
+// Reuse existing Customer Components (OverviewSection, RentalsSection, etc...)
+// ... [We will keep the previous customer components here verbatim or simplified for brevity in this replace call if possible, 
+// but since this is a full file replace, I must provide all code. 
+// For efficiency, I will include the missing Vendor components and re-declare customer ones.]
+
+function VendorOverview() {
+    return (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
+            <div className="flex justify-between items-center">
+                <h1 className="text-4xl tracking-tight">Vendor Overview</h1>
+                <div className="flex gap-4">
+                    <Button variant="outline" size="icon" className="rounded-full"><Bell className="w-4 h-4" /></Button>
+                    <Button variant="outline" size="icon" className="rounded-full"><Settings className="w-4 h-4" /></Button>
+                </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[
+                    { label: "Total Revenue", value: "₹1,24,000", sub: "+12% from last month", icon: DollarSign },
+                    { label: "Active Orders", value: "8", sub: "3 pending delivery", icon: Package },
+                    { label: "Total Products", value: "45", sub: "5 low stock", icon: Store },
+                ].map((stat, i) => (
+                    <div key={i} className="p-8 rounded-3xl bg-card border border-border space-y-4 hover:shadow-xl transition-all">
+                        <div className="p-3 bg-secondary/50 rounded-2xl w-fit">
+                            <stat.icon className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest">{stat.label}</p>
+                            <h3 className="text-3xl font-serif mt-1">{stat.value}</h3>
+                            <p className="text-xs text-muted-foreground mt-2">{stat.sub}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </motion.div>
+    )
+}
+
+function VendorBusinessInfo() {
+    return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+            <h1 className="text-4xl tracking-tight">Business Profile</h1>
+            <div className="p-8 rounded-3xl border border-border bg-card space-y-6">
+                <div className="grid md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                        <label className="text-xs uppercase tracking-widest text-muted-foreground">Company Name</label>
+                        <p className="text-xl font-medium">Rentlify Furniture Solutions</p>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs uppercase tracking-widest text-muted-foreground">Business Email</label>
+                        <p className="text-xl font-medium">vendor@rentlify.com</p>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs uppercase tracking-widest text-muted-foreground">GSTIN</label>
+                        <p className="text-xl font-medium">27AAAAA0000A1Z5</p>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs uppercase tracking-widest text-muted-foreground">Registered Address</label>
+                        <p className="text-lg text-muted-foreground">123 Business Park, Andheri East, Mumbai, MH</p>
+                    </div>
+                </div>
+                <Button variant="outline">Edit Details</Button>
+            </div>
+        </motion.div>
+    )
+}
+
+function VendorInventory() {
+    return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+            <div className="flex justify-between items-center">
+                <h1 className="text-4xl tracking-tight">My Inventory</h1>
+                <Button>Add New Product</Button>
+            </div>
+            <div className="rounded-3xl border border-border overflow-hidden">
+                <div className="p-12 text-center text-muted-foreground">
+                    <Package className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                    <p>Manage your product listings here.</p>
+                </div>
+            </div>
+        </motion.div>
+    )
+}
+
+function VendorSales() {
+    return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+            <h1 className="text-4xl tracking-tight">Sales History</h1>
+            <p className="text-muted-foreground">Track your recent orders and transactions.</p>
+        </motion.div>
+    )
+}
+
+function VendorEarnings() {
+    return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+            <h1 className="text-4xl tracking-tight">Earnings & Payouts</h1>
+            <p className="text-muted-foreground">View your payout history and upcoming settlements.</p>
+        </motion.div>
+    )
+}
+
+// --- RESTORED CUSTOMER COMPONENTS ---
 
 function OverviewSection({ onTrackOrder }: { onTrackOrder?: () => void }) {
     return (
@@ -185,24 +310,8 @@ function OverviewSection({ onTrackOrder }: { onTrackOrder?: () => void }) {
 
 function RentalsSection({ onTrackOrder }: { onTrackOrder?: () => void }) {
     const rentals = [
-        {
-            id: "R-8821",
-            name: "Eames Lounge Chair & Ottoman",
-            image: "https://images.unsplash.com/photo-1592078615290-033ee584e267?auto=format&fit=crop&q=80&w=400",
-            monthly: "₹1,200",
-            due: "Feb 5, 2024",
-            tenure: "6 / 12 months",
-            status: "On Time"
-        },
-        {
-            id: "R-9923",
-            name: "MacBook Pro 14 M3 Max",
-            image: "https://images.unsplash.com/photo-1517336714467-d23663c76746?auto=format&fit=crop&q=80&w=400",
-            monthly: "₹4,500",
-            due: "Feb 12, 2024",
-            tenure: "2 / 6 months",
-            status: "Extended"
-        }
+        { id: "R-8821", name: "Eames Lounge Chair & Ottoman", image: "https://images.unsplash.com/photo-1592078615290-033ee584e267?auto=format&fit=crop&q=80&w=400", monthly: "₹1,200", due: "Feb 5, 2024", tenure: "6 / 12 months", status: "On Time" },
+        { id: "R-9923", name: "MacBook Pro 14 M3 Max", image: "https://images.unsplash.com/photo-1517336714467-d23663c76746?auto=format&fit=crop&q=80&w=400", monthly: "₹4,500", due: "Feb 12, 2024", tenure: "2 / 6 months", status: "Extended" }
     ];
 
     return (
@@ -211,7 +320,6 @@ function RentalsSection({ onTrackOrder }: { onTrackOrder?: () => void }) {
                 <h1 className="text-4xl tracking-tight">Active Rentals</h1>
                 <Button variant="outline" className="rounded-full">Request Pickup</Button>
             </div>
-
             <div className="grid gap-6">
                 {rentals.map((item) => (
                     <div key={item.id} className="p-8 rounded-3xl bg-card border border-border grid md:grid-cols-4 gap-8 group hover:shadow-xl transition-all">
@@ -224,22 +332,10 @@ function RentalsSection({ onTrackOrder }: { onTrackOrder?: () => void }) {
                                 <h3 className="text-xl font-medium mt-1">{item.name}</h3>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-xs text-muted-foreground uppercase tracking-widest">Monthly Rent</p>
-                                    <p className="font-medium font-serif mt-1">{item.monthly}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground uppercase tracking-widest">Next Due</p>
-                                    <p className="font-medium mt-1">{item.due}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground uppercase tracking-widest">Tenure Progress</p>
-                                    <p className="font-medium mt-1">{item.tenure}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground uppercase tracking-widest">Status</p>
-                                    <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-100 mt-1">{item.status}</Badge>
-                                </div>
+                                <div><p className="text-xs text-muted-foreground uppercase tracking-widest">Monthly Rent</p><p className="font-medium font-serif mt-1">{item.monthly}</p></div>
+                                <div><p className="text-xs text-muted-foreground uppercase tracking-widest">Next Due</p><p className="font-medium mt-1">{item.due}</p></div>
+                                <div><p className="text-xs text-muted-foreground uppercase tracking-widest">Tenure Progress</p><p className="font-medium mt-1">{item.tenure}</p></div>
+                                <div><p className="text-xs text-muted-foreground uppercase tracking-widest">Status</p><Badge variant="secondary" className="bg-green-50 text-green-700 border-green-100 mt-1">{item.status}</Badge></div>
                             </div>
                         </div>
                         <div className="flex flex-col gap-3 justify-center">
@@ -295,47 +391,23 @@ function PaymentsSection() {
     return (
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-10">
             <h1 className="text-4xl tracking-tight">Payment Details</h1>
-
             <div className="grid md:grid-cols-2 gap-8">
                 <section className="space-y-6">
                     <h2 className="text-xl font-medium">Saved Cards</h2>
                     <div className="p-8 rounded-[2rem] bg-gradient-to-br from-neutral-900 to-neutral-800 text-white space-y-8 shadow-2xl relative overflow-hidden group">
-                        <div className="flex justify-between items-start">
-                            <div className="w-12 h-8 rounded bg-white/20" />
-                            <CreditCard className="w-8 h-8 opacity-50" />
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-sm opacity-50 uppercase tracking-[0.2em] font-light">Card Number</p>
-                            <p className="text-2xl font-serif tracking-[0.1em]">**** **** **** 8821</p>
-                        </div>
-                        <div className="flex justify-between items-end">
-                            <div>
-                                <p className="text-[10px] opacity-50 uppercase tracking-widest font-light">Card Holder</p>
-                                <p className="font-medium">JOHN DOE</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[10px] opacity-50 uppercase tracking-widest font-light">Expires</p>
-                                <p className="font-medium">12/28</p>
-                            </div>
-                        </div>
+                        <div className="flex justify-between items-start"><div className="w-12 h-8 rounded bg-white/20" /><CreditCard className="w-8 h-8 opacity-50" /></div>
+                        <div className="space-y-1"><p className="text-sm opacity-50 uppercase tracking-[0.2em] font-light">Card Number</p><p className="text-2xl font-serif tracking-[0.1em]">**** **** **** 8821</p></div>
+                        <div className="flex justify-between items-end"><div><p className="text-[10px] opacity-50 uppercase tracking-widest font-light">Card Holder</p><p className="font-medium">JOHN DOE</p></div><div className="text-right"><p className="text-[10px] opacity-50 uppercase tracking-widest font-light">Expires</p><p className="font-medium">12/28</p></div></div>
                         <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                     </div>
                     <Button variant="outline" className="w-full h-14 rounded-2xl border-dashed border-2">Add New Card</Button>
                 </section>
-
                 <section className="space-y-6">
                     <h2 className="text-xl font-medium">Billing History</h2>
                     <div className="space-y-3">
-                        {[
-                            { label: "Feb 2024 / Monthly Rent", date: "Feb 01", price: "₹5,700" },
-                            { label: "Jan 2024 / Monthly Rent", date: "Jan 01", price: "₹5,700" },
-                            { label: "Dec 2023 / Security Deposit", date: "Dec 15", price: "₹12,000" },
-                        ].map((b, i) => (
+                        {[{ label: "Feb 2024 / Monthly Rent", date: "Feb 01", price: "₹5,700" }, { label: "Jan 2024 / Monthly Rent", date: "Jan 01", price: "₹5,700" }, { label: "Dec 2023 / Security Deposit", date: "Dec 15", price: "₹12,000" }].map((b, i) => (
                             <div key={i} className="p-5 flex justify-between items-center rounded-2xl border border-border hover:bg-secondary/30 transition-all cursor-pointer">
-                                <div>
-                                    <p className="font-medium text-sm">{b.label}</p>
-                                    <p className="text-xs text-muted-foreground mt-0.5">{b.date}</p>
-                                </div>
+                                <div><p className="font-medium text-sm">{b.label}</p><p className="text-xs text-muted-foreground mt-0.5">{b.date}</p></div>
                                 <p className="font-serif font-medium">{b.price}</p>
                             </div>
                         ))}
@@ -351,32 +423,14 @@ function AddressesSection() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
             <h1 className="text-4xl tracking-tight">Saved Addresses</h1>
             <div className="grid md:grid-cols-2 gap-6">
-                {[
-                    { type: "Home", addr: "Penthouse 12B, Luxury Towers, Worli, Mumbai, Maharashtra - 400018", icon: Heart },
-                    { type: "Office", addr: "Level 14, WeWork Galaxy, MG Road, Bengaluru, Karnataka - 560001", icon: Package },
-                ].map((a, i) => (
+                {[{ type: "Home", addr: "Penthouse 12B, Luxury Towers, Worli, Mumbai, Maharashtra - 400018", icon: Heart }, { type: "Office", addr: "Level 14, WeWork Galaxy, MG Road, Bengaluru, Karnataka - 560001", icon: Package }].map((a, i) => (
                     <div key={i} className="p-8 rounded-3xl border border-border bg-card space-y-4 relative group">
-                        <div className="flex justify-between items-start">
-                            <div className="p-3 bg-secondary rounded-2xl">
-                                <MapPin className="w-5 h-5 text-muted-foreground" />
-                            </div>
-                            <div className="flex gap-2">
-                                <Button variant="ghost" size="sm" className="rounded-full">Edit</Button>
-                            </div>
-                        </div>
-                        <div>
-                            <h3 className="font-medium text-lg flex items-center gap-2">
-                                {a.type}
-                                {i === 0 && <Badge variant="secondary" className="text-[10px] bg-primary/5 text-primary">Default</Badge>}
-                            </h3>
-                            <p className="text-sm text-muted-foreground leading-relaxed mt-2">{a.addr}</p>
-                        </div>
+                        <div className="flex justify-between items-start"><div className="p-3 bg-secondary rounded-2xl"><MapPin className="w-5 h-5 text-muted-foreground" /></div><div className="flex gap-2"><Button variant="ghost" size="sm" className="rounded-full">Edit</Button></div></div>
+                        <div><h3 className="font-medium text-lg flex items-center gap-2">{a.type}{i === 0 && <Badge variant="secondary" className="text-[10px] bg-primary/5 text-primary">Default</Badge>}</h3><p className="text-sm text-muted-foreground leading-relaxed mt-2">{a.addr}</p></div>
                     </div>
                 ))}
                 <button className="p-8 rounded-3xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary hover:text-primary transition-all group">
-                    <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                        <ArrowRight className="w-5 h-5 -rotate-45" />
-                    </div>
+                    <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center group-hover:bg-primary/10 transition-colors"><ArrowRight className="w-5 h-5 -rotate-45" /></div>
                     <span className="font-medium italic">Add new address</span>
                 </button>
             </div>
@@ -397,19 +451,9 @@ function WishlistSection() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {wishlist.map((item, i) => (
                     <div key={i} className="group relative rounded-3xl overflow-hidden border border-border bg-card hover:shadow-2xl transition-all duration-500">
-                        <div className="aspect-[4/5] overflow-hidden">
-                            <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                        </div>
-                        <div className="p-6 space-y-4">
-                            <div>
-                                <h3 className="font-medium tracking-tight line-clamp-1">{item.name}</h3>
-                                <p className="text-sm text-muted-foreground font-serif mt-1">{item.price}</p>
-                            </div>
-                            <Button className="w-full rounded-xl">Rent Now</Button>
-                        </div>
-                        <button className="absolute top-4 right-4 p-2 bg-white/80 backdrop-blur rounded-full text-destructive shadow-lg hover:scale-110 transition-all">
-                            <Heart className="w-4 h-4 fill-current" />
-                        </button>
+                        <div className="aspect-[4/5] overflow-hidden"><img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" /></div>
+                        <div className="p-6 space-y-4"><div><h3 className="font-medium tracking-tight line-clamp-1">{item.name}</h3><p className="text-sm text-muted-foreground font-serif mt-1">{item.price}</p></div><Button className="w-full rounded-xl">Rent Now</Button></div>
+                        <button className="absolute top-4 right-4 p-2 bg-white/80 backdrop-blur rounded-full text-destructive shadow-lg hover:scale-110 transition-all"><Heart className="w-4 h-4 fill-current" /></button>
                     </div>
                 ))}
             </div>

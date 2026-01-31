@@ -40,22 +40,11 @@ export default function ProductList() {
     const fetchProducts = async () => {
         try {
             const { data } = await api.get("/products/my-products");
+            // API returns { success: true, data: [...] }
             setProducts(data.data || []);
         } catch (error) {
             console.error("Failed to fetch products", error);
-            // Fallback mock data if API fails (for demo) - Updated to match schema
-            setProducts([
-                {
-                    _id: "1",
-                    name: "Sony A7III Camera Kit",
-                    category: "Electronics",
-                    attributes: [{ key: "Condition", value: "Like New" }],
-                    pricing: { hourly: 500, daily: 2500, weekly: 10000 },
-                    totalQuantity: 2,
-                    images: ["https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&q=80"],
-                    isActive: true
-                },
-            ] as any);
+            // setProducts([]); // Clear products on error or keep empty
         } finally {
             setIsLoading(false);
         }
@@ -163,9 +152,11 @@ export default function ProductList() {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem>
-                                                        <Eye className="w-4 h-4 mr-2" /> View Details
-                                                    </DropdownMenuItem>
+                                                    <Link to={`/vendor/products/view/${product._id}`}>
+                                                        <DropdownMenuItem>
+                                                            <Eye className="w-4 h-4 mr-2" /> View Details
+                                                        </DropdownMenuItem>
+                                                    </Link>
                                                     <Link to={`/vendor/products/edit/${product._id}`}>
                                                         <DropdownMenuItem>
                                                             <Edit className="w-4 h-4 mr-2" /> Edit

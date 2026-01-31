@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Upload, X } from "lucide-react";
+import { ArrowLeft, Upload, X, ChevronsUpDown, Check } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -14,6 +14,19 @@ import {
     CardHeader,
     CardTitle,
 } from "@/app/components/ui/card";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/app/components/ui/command";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/app/components/ui/popover";
 import { api } from "@/app/services/api";
 import { cn } from "@/app/components/ui/utils";
 
@@ -31,23 +44,36 @@ const productSchema = z.object({
 
 type ProductFormData = z.infer<typeof productSchema>;
 
+const categories = [
+    "Living Room",
+    "Bedroom",
+    "Kitchen",
+    "Dining",
+    "Home Appliances",
+    "Electronics"
+];
+
 export default function ProductForm() {
     const { id } = useParams();
     const navigate = useNavigate();
     const isEditing = !!id;
     const [images, setImages] = useState<string[]>([]);
     const [imageUrlInput, setImageUrlInput] = useState("");
+    const [openCategory, setOpenCategory] = useState(false);
 
-    const { register, handleSubmit, setValue, reset, formState: { errors, isSubmitting } } = useForm<ProductFormData>({
+    const { register, handleSubmit, setValue, getValues, watch, reset, formState: { errors, isSubmitting } } = useForm<ProductFormData>({
         resolver: zodResolver(productSchema) as any,
         defaultValues: {
             condition: "New",
             hourlyPrice: 0,
             dailyPrice: 0,
             weeklyPrice: 0,
-            quantity: 1
+            quantity: 1,
+            category: ""
         }
     });
+
+    const selectedCategory = watch("category");
 
     useEffect(() => {
         if (isEditing) {
@@ -157,9 +183,52 @@ export default function ProductForm() {
                                 {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
                             </div>
                             <div className="grid md:grid-cols-2 gap-4">
-                                <div className="grid gap-2">
+                                <div className="grid gap-2 flex flex-col">
                                     <label className="text-sm font-medium">Category</label>
-                                    <Input placeholder="e.g. Electronics" {...register("category")} />
+                                    <Popover open={openCategory} onOpenChange={setOpenCategory}>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                aria-expanded={openCategory}
+                                                className="w-full justify-between font-normal"
+                                            >
+                                                {selectedCategory || "Select category..."}
+                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                            <Command>
+                                                <CommandInput placeholder="Search category..." />
+                                                <CommandList>
+                                                    <CommandEmpty>No category found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {categories.map((category) => (
+                                                            <CommandItem
+                                                                key={category}
+                                                                value={category}
+                                                                onSelect={(currentValue) => {
+                                                                    // Command usually converts to lowercase, so we use the original category string
+                                                                    // But be careful, currentValue passed by onSelect might be lowercased by cmdk
+                                                                    // We should use the category from the map
+                                                                    setValue("category", category);
+                                                                    setOpenCategory(false);
+                                                                }}
+                                                            >
+                                                                <Check
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        selectedCategory === category ? "opacity-100" : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {category}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
                                     {errors.category && <p className="text-sm text-red-500">{errors.category.message}</p>}
                                 </div>
                                 <div className="grid gap-2">
