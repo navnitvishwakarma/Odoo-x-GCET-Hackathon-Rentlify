@@ -19,6 +19,7 @@ import ProductList from '../pages/vendor/products/ProductList';
 import ProductForm from '../pages/vendor/products/ProductForm';
 import VendorProductDetails from '../pages/vendor/products/VendorProductDetails';
 import OrderList from '../pages/vendor/orders/OrderList';
+import VendorSettings from '../pages/vendor/VendorSettings';
 
 // 🔄 Helper component to redirect users based on their role after login
 function RoleRedirect() {
@@ -62,6 +63,7 @@ export default function AppRoutes() {
                     <Route path="/vendor/products/view/:id" element={<VendorProductDetails />} /> {/* 👁️ View Product Details */}
                     <Route path="/vendor/products/edit/:id" element={<ProductForm />} /> {/* ✏️ Edit Product */}
                     <Route path="/vendor/orders" element={<OrderList />} /> {/* 🛒 Order Management */}
+                    <Route path="/vendor/settings" element={<VendorSettings />} /> {/* ⚙️ Vendor Settings */}
                 </Route>
             </Route>
 
