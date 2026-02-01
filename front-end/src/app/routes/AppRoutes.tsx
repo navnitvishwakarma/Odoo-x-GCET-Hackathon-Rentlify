@@ -28,6 +28,7 @@ import OrderList from '../pages/vendor/orders/OrderList';
 import VendorOrderDetails from '../pages/vendor/orders/VendorOrderDetails';
 import VendorSettings from '../pages/vendor/VendorSettings';
 import VendorInvoices from '../pages/vendor/invoices/VendorInvoices';
+import VendorActiveOrders from '../pages/vendor/VendorActiveOrders';
 
 // 🔄 Helper component to redirect users based on their role after login
 function RoleRedirect() {
@@ -77,6 +78,7 @@ export default function AppRoutes() {
                     <Route path="/vendor/products/view/:id" element={<VendorProductDetails />} /> {/* 👁️ View Product Details */}
                     <Route path="/vendor/products/edit/:id" element={<ProductForm />} /> {/* ✏️ Edit Product */}
                     <Route path="/vendor/orders" element={<OrderList />} /> {/* 🛒 Order Management */}
+                    <Route path="/vendor/active" element={<VendorActiveOrders />} /> {/* ⏱️ Active Orders & Fines */}
                     <Route path="/vendor/orders/:id" element={<VendorOrderDetails />} /> {/* 👁️ View Order Details */}
                     <Route path="/vendor/invoices" element={<VendorInvoices />} /> {/* 📄 Invoice Management */}
                     <Route path="/vendor/settings" element={<VendorSettings />} /> {/* ⚙️ Vendor Settings */}

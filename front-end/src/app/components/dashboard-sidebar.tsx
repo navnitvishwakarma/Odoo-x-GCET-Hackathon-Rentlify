@@ -23,7 +23,8 @@ export function DashboardSidebar({ role }: SidebarProps) {
     const vendorLinks = [
         { name: "Overview", href: "/vendor", icon: LayoutDashboard },
         { name: "My Products", href: "/vendor/products", icon: Package },
-        { name: "Orders", href: "/vendor/orders", icon: ShoppingBag },
+        { name: "Active Orders", href: "/vendor/active", icon: ShoppingBag },
+        { name: "Order History", href: "/vendor/orders", icon: FileText },
         { name: "Invoices", href: "/vendor/invoices", icon: FileText },
         { name: "Settings", href: "/vendor/settings", icon: Settings },
     ];

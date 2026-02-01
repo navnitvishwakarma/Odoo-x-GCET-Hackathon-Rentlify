@@ -19,6 +19,24 @@ export function ProfilePage({ onBack, onTrackOrder }: { onBack?: () => void; onT
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState<Section>("overview");
+    const [orders, setOrders] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (user && !isVendor) {
+            fetchOrders();
+        }
+    }, [user]);
+
+    const fetchOrders = async () => {
+        try {
+            const { data } = await api.get('/orders');
+            if (data.success) {
+                setOrders(data.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch orders", error);
+        }
+    };
 
     if (!user) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
@@ -115,9 +133,9 @@ export function ProfilePage({ onBack, onTrackOrder }: { onBack?: () => void; onT
                         {/* Customer Sections */}
                         {!isVendor && (
                             <>
-                                {activeSection === "overview" && <OverviewSection onTrackOrder={onTrackOrder} />}
-                                {activeSection === "rentals" && <RentalsSection onTrackOrder={onTrackOrder} />}
-                                {activeSection === "orders" && <OrdersSection />}
+                                {activeSection === "overview" && <OverviewSection orders={orders} onTrackOrder={onTrackOrder} />}
+                                {activeSection === "rentals" && <RentalsSection orders={orders} onTrackOrder={onTrackOrder} />}
+                                {activeSection === "orders" && <OrdersSection orders={orders} />}
                                 {activeSection === "payments" && <PaymentsSection />}
                                 {activeSection === "addresses" && <AddressesSection />}
                                 {activeSection === "wishlist" && <WishlistSection />}
@@ -283,7 +301,18 @@ function VendorEarnings() {
 
 // --- RESTORED CUSTOMER COMPONENTS ---
 
-function OverviewSection({ onTrackOrder }: { onTrackOrder?: () => void }) {
+function OverviewSection({ orders, onTrackOrder }: { orders: any[], onTrackOrder?: () => void }) {
+    // Calculate stats
+    const totalPurchases = orders.length;
+    const activeRentals = orders.flatMap(o => o.items).filter(i => {
+        const endDate = new Date(i.endDate);
+        return endDate >= new Date();
+    }).length;
+
+    // Sort orders by date to get recent
+    const sortedOrders = [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const recentActivity = sortedOrders.slice(0, 3);
+
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
             <div className="flex justify-between items-center">
@@ -296,9 +325,9 @@ function OverviewSection({ onTrackOrder }: { onTrackOrder?: () => void }) {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
-                    { label: "Active Rentals", value: "3", sub: "1 due in 5 days", icon: Clock },
-                    { label: "Total Purchases", value: "12", sub: "Feb goal: ₹45,000", icon: Package },
-                    { label: "Reward Points", value: "2,450", sub: "₹245 equivalent", icon: ShieldCheck },
+                    { label: "Active Rentals", value: activeRentals.toString(), sub: "Currently rented items", icon: Clock },
+                    { label: "Total Orders", value: totalPurchases.toString(), sub: "Lifetime orders", icon: Package },
+                    { label: "Reward Points", value: (totalPurchases * 10).toString(), sub: "Based on orders", icon: ShieldCheck },
                 ].map((stat, i) => (
                     <div key={i} className="p-8 rounded-3xl bg-card border border-border space-y-4 hover:shadow-xl transition-all">
                         <div className="p-3 bg-secondary/50 rounded-2xl w-fit">
@@ -316,43 +345,56 @@ function OverviewSection({ onTrackOrder }: { onTrackOrder?: () => void }) {
             <section className="space-y-6">
                 <h2 className="text-2xl">Recent Activity</h2>
                 <div className="rounded-3xl border border-border divide-y divide-border overflow-hidden">
-                    {[
-                        { title: "Monthly Rent Paid", sub: "Premium Eames Chair", date: "Today", amount: "₹1,200", status: "Success" },
-                        { title: "Product Delivered", sub: "Dyson V11 Vacuum", date: "Jan 28", amount: "N/A", status: "Delivered" },
-                        { title: "Rental Extended", sub: "MacBook Pro M3", date: "Jan 25", amount: "₹4,500", status: "Extended" },
-                    ].map((act, i) => (
-                        <div key={i} className="p-6 flex items-center justify-between hover:bg-secondary/20 transition-colors">
-                            <div className="flex gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
-                                    <Package className="w-5 h-5 text-muted-foreground" />
+                    {recentActivity.length === 0 ? (
+                        <div className="p-6 text-muted-foreground">No recent activity</div>
+                    ) : (
+                        recentActivity.map((order, i) => (
+                            <div key={i} className="p-6 flex items-center justify-between hover:bg-secondary/20 transition-colors">
+                                <div className="flex gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
+                                        <Package className="w-5 h-5 text-muted-foreground" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-sm">Order #{order.orderId}</p>
+                                        <p className="text-xs text-muted-foreground">{order.items?.length} Items · {new Date(order.createdAt).toLocaleDateString()}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="font-medium text-sm">{act.title}</p>
-                                    <p className="text-xs text-muted-foreground">{act.sub} · {act.date}</p>
+                                <div className="text-right">
+                                    <p className="font-medium text-sm">₹{order.totalAmount?.toLocaleString()}</p>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-tighter">{order.status}</Badge>
+                                        {i === 0 && (
+                                            <Button variant="link" size="sm" onClick={onTrackOrder} className="h-auto p-0 text-[10px] text-primary">Track Order</Button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <p className="font-medium text-sm">{act.amount}</p>
-                                <div className="flex flex-col items-end gap-1">
-                                    <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-tighter">{act.status}</Badge>
-                                    {i === 1 && (
-                                        <Button variant="link" size="sm" onClick={onTrackOrder} className="h-auto p-0 text-[10px] text-primary">Track Order</Button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </section>
         </motion.div>
     );
 }
 
-function RentalsSection({ onTrackOrder }: { onTrackOrder?: () => void }) {
-    const rentals = [
-        { id: "R-8821", name: "Eames Lounge Chair & Ottoman", image: "https://images.unsplash.com/photo-1592078615290-033ee584e267?auto=format&fit=crop&q=80&w=400", monthly: "₹1,200", due: "Feb 5, 2024", tenure: "6 / 12 months", status: "On Time" },
-        { id: "R-9923", name: "MacBook Pro 14 M3 Max", image: "https://images.unsplash.com/photo-1517336714467-d23663c76746?auto=format&fit=crop&q=80&w=400", monthly: "₹4,500", due: "Feb 12, 2024", tenure: "2 / 6 months", status: "Extended" }
-    ];
+function RentalsSection({ orders, onTrackOrder }: { orders: any[], onTrackOrder?: () => void }) {
+    // Flatten orders to get all items
+    const rentals = orders.flatMap(order =>
+        order.items.map((item: any) => ({
+            ...item,
+            orderId: order.orderId,
+            status: item.status || order.status
+        }))
+    ).filter((item) => {
+        // Filter for active rentals (this logic can be refined based on 'status' or date)
+        const endDate = new Date(item.endDate);
+        const now = new Date();
+        // Consider active if status is 'active' OR 'confirmed' AND end date hasn't passed long ago (or just show all confirmed)
+        return item.status === 'active' || item.status === 'confirmed';
+    });
+
+    // Sort by return date (soonest first)
+    rentals.sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
 
     return (
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8">
@@ -360,37 +402,81 @@ function RentalsSection({ onTrackOrder }: { onTrackOrder?: () => void }) {
                 <h1 className="text-4xl tracking-tight">Active Rentals</h1>
                 <Button variant="outline" className="rounded-full">Request Pickup</Button>
             </div>
-            <div className="grid gap-6">
-                {rentals.map((item) => (
-                    <div key={item.id} className="p-8 rounded-3xl bg-card border border-border grid md:grid-cols-4 gap-8 group hover:shadow-xl transition-all">
-                        <div className="w-full h-40 rounded-2xl overflow-hidden border border-border">
-                            <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                        </div>
-                        <div className="md:col-span-2 space-y-4">
-                            <div>
-                                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Rental ID: {item.id}</span>
-                                <h3 className="text-xl font-medium mt-1">{item.name}</h3>
+
+            {rentals.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground border rounded-3xl">
+                    <p>No active rentals found.</p>
+                </div>
+            ) : (
+                <div className="grid gap-6">
+                    {rentals.map((item, index) => {
+                        const endDate = new Date(item.endDate);
+                        const isOverdue = new Date() > endDate;
+
+                        return (
+                            <div key={index} className={`p-8 rounded-3xl bg-card border ${isOverdue ? 'border-red-200 bg-red-50/10' : 'border-border'} grid md:grid-cols-4 gap-8 group hover:shadow-xl transition-all`}>
+                                <div className="w-full h-40 rounded-2xl overflow-hidden border border-border">
+                                    {item.product?.images?.[0] ? (
+                                        <img src={item.product.images[0]} alt={item.product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                    ) : (
+                                        <div className="w-full h-full bg-secondary flex items-center justify-center text-muted-foreground"><Package /></div>
+                                    )}
+                                </div>
+                                <div className="md:col-span-2 space-y-4">
+                                    <div>
+                                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Order: {item.orderId}</span>
+                                        <h3 className="text-xl font-medium mt-1">{item.product?.name}</h3>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground uppercase tracking-widest">Price</p>
+                                            <p className="font-medium font-serif mt-1">₹{item.price.toLocaleString()}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-muted-foreground uppercase tracking-widest">Return By</p>
+                                            <p className={`font-medium mt-1 ${isOverdue ? 'text-red-600 font-bold' : ''}`}>
+                                                {new Date(item.endDate).toLocaleDateString()}
+                                                {isOverdue && <span className="ml-2 text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded uppercase">Overdue</span>}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-muted-foreground uppercase tracking-widest">Quantity</p>
+                                            <p className="font-medium mt-1">{item.quantity}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-muted-foreground uppercase tracking-widest">Status</p>
+                                            <Badge variant="secondary" className={`mt-1 ${isOverdue ? 'bg-red-100 text-red-700' : 'bg-green-50 text-green-700'}`}>
+                                                {isOverdue ? 'Overdue' : (item.status || 'Active')}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-3 justify-center">
+                                    <Button onClick={onTrackOrder} className="rounded-xl h-12">Track Order</Button>
+                                    <Button variant="secondary" className="rounded-xl h-12">Extend Rental</Button>
+                                    <Button variant="ghost" className="text-muted-foreground hover:text-foreground text-xs">Download Agreement <ExternalLink className="w-3 h-3 ml-2" /></Button>
+                                </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div><p className="text-xs text-muted-foreground uppercase tracking-widest">Monthly Rent</p><p className="font-medium font-serif mt-1">{item.monthly}</p></div>
-                                <div><p className="text-xs text-muted-foreground uppercase tracking-widest">Next Due</p><p className="font-medium mt-1">{item.due}</p></div>
-                                <div><p className="text-xs text-muted-foreground uppercase tracking-widest">Tenure Progress</p><p className="font-medium mt-1">{item.tenure}</p></div>
-                                <div><p className="text-xs text-muted-foreground uppercase tracking-widest">Status</p><Badge variant="secondary" className="bg-green-50 text-green-700 border-green-100 mt-1">{item.status}</Badge></div>
-                            </div>
-                        </div>
-                        <div className="flex flex-col gap-3 justify-center">
-                            <Button onClick={onTrackOrder} className="rounded-xl h-12">Track Order</Button>
-                            <Button variant="secondary" className="rounded-xl h-12">Extend Rental</Button>
-                            <Button variant="ghost" className="text-muted-foreground hover:text-foreground text-xs">Download Agreement <ExternalLink className="w-3 h-3 ml-2" /></Button>
-                        </div>
-                    </div>
-                ))}
-            </div>
+                        );
+                    })}
+                </div>
+            )}
         </motion.div>
     );
 }
 
-function OrdersSection() {
+function OrdersSection({ orders }: { orders: any[] }) {
+    if (orders.length === 0) {
+        return (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                <h1 className="text-4xl tracking-tight">Past Purchases</h1>
+                <div className="p-12 text-center border rounded-3xl text-muted-foreground">
+                    No orders found.
+                </div>
+            </motion.div>
+        );
+    }
+
     return (
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8">
             <h1 className="text-4xl tracking-tight">Past Purchases</h1>
@@ -405,14 +491,16 @@ function OrdersSection() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                        {[1, 2, 3].map((i) => (
+                        {orders.map((order, i) => (
                             <tr key={i} className="hover:bg-secondary/10 transition-colors group">
                                 <td className="px-8 py-6">
-                                    <p className="font-medium">Premium Office Setup</p>
-                                    <p className="text-xs text-muted-foreground mt-1 tracking-tight">Order #RNTL-229{i}</p>
+                                    <p className="font-medium">{order.items?.[0]?.product?.name || 'Multiple Items'}</p>
+                                    <p className="text-xs text-muted-foreground mt-1 tracking-tight">Order #{order.orderId}</p>
                                 </td>
-                                <td className="px-8 py-6 text-sm text-muted-foreground">Jan {20 - i}, 2024</td>
-                                <td className="px-8 py-6 font-medium">₹{(12000 * i).toLocaleString()}</td>
+                                <td className="px-8 py-6 text-sm text-muted-foreground">
+                                    {new Date(order.createdAt).toLocaleDateString()}
+                                </td>
+                                <td className="px-8 py-6 font-medium">₹{order.totalAmount?.toLocaleString()}</td>
                                 <td className="px-8 py-6 text-right">
                                     <Button variant="ghost" size="sm" className="rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Download className="w-4 h-4 mr-2" /> Download PDF

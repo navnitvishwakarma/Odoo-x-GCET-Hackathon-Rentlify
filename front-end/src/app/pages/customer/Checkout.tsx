@@ -89,9 +89,13 @@ export default function Checkout() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log("Submit triggered. Loading state:", loading);
+
+        if (loading) return; // Prevent double submit
         setLoading(true);
 
         try {
+            console.log("Constructing payload...");
             // Construct payload for API
             // items: [{ product: ID, startDate, endDate, quantity }]
             const apiItems = checkoutItems.map(item => ({
@@ -101,22 +105,41 @@ export default function Checkout() {
                 quantity: item.quantity
             }));
 
-            // TODO: In a real app, process payment here before creating order
-            // or create order as 'pending_payment' then process payment.
+            const payload = {
+                items: apiItems,
+                shippingAddress: {
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    address: formData.address,
+                    paymentMethod: formData.paymentMethod
+                }
+            };
 
-            const response = await api.post('/orders', { items: apiItems });
+            console.log("Sending payload to /orders:", JSON.stringify(payload, null, 2));
+
+            const response = await api.post('/orders', payload);
+            console.log("API Response:", response.data);
 
             if (response.data.success) {
+                console.log("Order successful. ID:", response.data.data._id);
                 toast.success("Order placed successfully!");
                 // Clear cart if this was a cart checkout
                 if (!location.state?.items) {
                     await clearCart();
                 }
                 const orderId = response.data.data._id; // Assuming backend returns order object
+
+                console.log("Navigating to:", `/order-confirmation/${orderId}`);
                 navigate(`/order-confirmation/${orderId}`);
+            } else {
+                console.error("API success flag false or missing data", response.data);
+                toast.error("Order failed: Invalid server response");
             }
         } catch (error: any) {
-            console.error("Checkout failed", error);
+            console.error("Checkout Request failed", error);
+            console.log("Error details:", error.response?.data);
+
             const errorMessage = error.response?.data?.message || "Failed to place order";
 
             if (error.response?.status === 400 || errorMessage.includes("Product not found") || errorMessage.includes("not available")) {
@@ -125,6 +148,7 @@ export default function Checkout() {
                 toast.error(errorMessage);
             }
         } finally {
+            console.log("Finished submit handler.");
             setLoading(false);
         }
     };
@@ -136,7 +160,7 @@ export default function Checkout() {
             <div className="max-w-[1200px] mx-auto">
                 <h1 className="text-3xl font-serif mb-8">Checkout</h1>
 
-                <div className="grid lg:grid-cols-12 gap-12">
+                <form onSubmit={handleSubmit} className="grid lg:grid-cols-12 gap-12">
                     {/* Form Section */}
                     <div className="lg:col-span-7 space-y-8">
                         {/* Shipping Details */}
@@ -282,7 +306,7 @@ export default function Checkout() {
                             </div>
 
                             <Button
-                                onClick={handleSubmit}
+                                type="submit"
                                 disabled={loading}
                                 className="w-full h-12 text-lg rounded-full"
                             >
@@ -294,7 +318,7 @@ export default function Checkout() {
                             </p>
                         </div>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     );

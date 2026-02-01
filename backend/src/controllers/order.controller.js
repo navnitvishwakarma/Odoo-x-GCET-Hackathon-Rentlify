@@ -8,6 +8,7 @@ const { successResponse, errorResponse } = require('../utils/response.util');
 const createOrder = async (req, res, next) => {
     const session = await mongoose.startSession();
     session.startTransaction();
+    console.log("Create Order Payload:", JSON.stringify(req.body, null, 2));
 
     try {
         const { items } = req.body;
@@ -16,9 +17,17 @@ const createOrder = async (req, res, next) => {
 
         // 1. Validate Items & Check Availability
         for (const item of items) {
-            const product = await Product.findById(item.product);
+            const product = await Product.findById(item.product).populate('vendor');
             if (!product) {
                 throw new Error(`Product not found: ${item.product}`);
+            }
+
+            if (!product.vendor.isVerified) {
+                throw new Error(`Cannot order product '${product.name}' as the vendor is not verified yet.`);
+            }
+
+            if (!product.vendor.isActive) {
+                throw new Error(`Cannot order product '${product.name}' as the vendor account is suspended.`);
             }
 
             const isAvailable = await reservationService.checkAvailability(
@@ -33,13 +42,25 @@ const createOrder = async (req, res, next) => {
             }
 
             // Calculate Price (Simplified: Daily rate * days)
-            const days = Math.ceil((new Date(item.endDate) - new Date(item.startDate)) / (1000 * 60 * 60 * 24));
+            // Calculate Price (Simplified: Daily rate * days)
+            // Calculate Price (Simplified: Daily rate * days)
+            let days = Math.ceil((new Date(item.endDate) - new Date(item.startDate)) / (1000 * 60 * 60 * 24));
+
+            if (isNaN(days)) {
+                throw new Error(`Invalid dates for product: ${product.name}`);
+            }
+
+            days = Math.max(1, days); // Ensure minimum 1 day charge
+
             const price = product.pricing.daily * days * item.quantity;
-            totalAmount += price;
+
+            if (isNaN(price)) {
+                throw new Error(`Invalid price calculation for product: ${product.name}`);
+            }
 
             orderItems.push({
                 product: product._id,
-                vendor: product.vendor,
+                vendor: product.vendor._id, // Explicitly use ID
                 quantity: item.quantity,
                 startDate: item.startDate,
                 endDate: item.endDate,
@@ -52,7 +73,8 @@ const createOrder = async (req, res, next) => {
             customer: req.user._id,
             items: orderItems,
             totalAmount: totalAmount,
-            status: 'confirmed', // Or pending payment
+            status: 'confirmed',
+            shippingAddress: req.body.shippingAddress, // Save shipping details
         }], { session });
 
         // 3. Create Reservations
@@ -114,10 +136,14 @@ const createOrder = async (req, res, next) => {
     } catch (error) {
         await session.abortTransaction();
         session.endSession();
-        // If it's a known error, send 400
-        if (error.message.includes('not available') || error.message.includes('Product not found')) {
+        if (error.name === 'ValidationError') {
             return errorResponse(res, 400, error.message);
         }
+        // If it's a known error, send 400
+        if (error.message.includes('not available') || error.message.includes('Product not found') || error.message.includes('Cannot order product')) {
+            return errorResponse(res, 400, error.message);
+        }
+        console.error("Create Order Error:", error);
         next(error);
     }
 };
@@ -213,9 +239,79 @@ const updateOrderStatus = async (req, res, next) => {
     }
 };
 
+const getVendorActiveOrders = async (req, res, next) => {
+    try {
+        const Vendor = require('../models/Vendor');
+        const vendor = await Vendor.findOne({ user: req.user._id });
+
+        if (!vendor) {
+            return errorResponse(res, 404, 'Vendor profile not found');
+        }
+
+        const vendorId = vendor._id.toString();
+
+        // Find orders containing items from this vendor
+        const orders = await Order.find({
+            'items.vendor': vendor._id,
+            'status': { $in: ['confirmed', 'in-progress'] } // Active orders only
+        })
+            .populate('customer', 'name email phone')
+            .populate('items.product', 'name images pricing');
+
+        const activeItems = [];
+        const today = new Date();
+
+        // Process orders to extract specific vendor items and calculate fines
+        orders.forEach(order => {
+            order.items.forEach(item => {
+                // Filter only this vendor's items that are active
+                if (item.vendor.toString() === vendorId) {
+                    const endDate = new Date(item.endDate);
+                    let fine = 0;
+                    let overdueDays = 0;
+
+                    // Check if overdue
+                    if (today > endDate) {
+                        const timeDiff = today - endDate;
+                        overdueDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+                        // Fine Calculation: 2x Daily Rate * Overdue Days
+                        // Ensure product and pricing exist to avoid crashes
+                        if (item.product && item.product.pricing) {
+                            fine = (item.product.pricing.daily * 2) * overdueDays * item.quantity;
+                        }
+                    }
+
+                    activeItems.push({
+                        _id: item._id, // Item ID (if needed)
+                        orderId: order.orderId,
+                        orderDbId: order._id,
+                        customer: order.customer,
+                        product: item.product,
+                        quantity: item.quantity,
+                        startDate: item.startDate,
+                        endDate: item.endDate,
+                        status: item.status || order.status,
+                        overdueDays: overdueDays > 0 ? overdueDays : 0,
+                        fine: fine
+                    });
+                }
+            });
+        });
+
+        // Sort by overdue first, then date
+        activeItems.sort((a, b) => b.fine - a.fine || new Date(a.endDate) - new Date(b.endDate));
+
+        successResponse(res, 200, 'Active orders retrieved', activeItems);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     createOrder,
     getOrders,
     getOrder,
-    updateOrderStatus
+    updateOrderStatus,
+    getVendorActiveOrders
 };
