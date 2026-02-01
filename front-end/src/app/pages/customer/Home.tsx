@@ -1,9 +1,10 @@
 import { HeroSection } from "@/app/components/hero-section";
 import { CategorySection } from "@/app/components/category-section";
 import { BrowseSection } from "@/app/components/browse-section";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useRef } from "react";
 import { FilterState } from "@/app/components/filter-sidebar";
+import { useCart } from "@/app/context/CartContext";
 
 export default function Home() {
     const [filters, setFilters] = useState<FilterState>({
@@ -13,6 +14,9 @@ export default function Home() {
         duration: "Any",
         conditions: [],
     });
+
+    const { addToCart } = useCart();
+    const navigate = useNavigate();
 
     // Browse Ref for scrolling
     const browseRef = useRef<HTMLDivElement>(null);
@@ -35,7 +39,21 @@ export default function Home() {
                     onFilterChange={setFilters}
                     onProductClick={() => { }} // TODO: Navigate to /products/:id
                     onWishlistClick={() => { }} // TODO: Add to wishlist context
-                    onAddToCart={(product) => { }} // TODO: Add to cart context
+                    onAddToCart={async (product) => {
+                        await addToCart(product._id, "rent");
+                        navigate('/cart');
+                    }} // Default to rent for now
+                    onRentNow={(product) => navigate('/checkout', {
+                        state: {
+                            items: [{
+                                product: product, // Pass full product object to avoid refetching
+                                productId: product._id,
+                                quantity: 1,
+                                type: 'rent',
+                                period: 3 // Default period
+                            }]
+                        }
+                    })}
                 />
             </div>
         </>

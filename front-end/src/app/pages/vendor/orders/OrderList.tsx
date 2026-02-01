@@ -36,35 +36,23 @@ export default function OrderList() {
 
     const fetchOrders = async () => {
         try {
-            const { data } = await api.get("/orders/my-orders"); // Endpoint to fetch vendor orders
-            setOrders(data.data || []);
+            const { data } = await api.get("/orders"); // Correct endpoint
+            // Map backend data to frontend interface
+            const mappedOrders = (data.data || []).map((order: any) => ({
+                _id: order._id,
+                orderId: order.orderId || order._id.slice(-6).toUpperCase(),
+                productName: order.items[0]?.product?.name || "Unknown Product",
+                customerName: order.customer?.name || "Unknown Customer",
+                startDate: new Date(order.items[0]?.startDate).toLocaleDateString(),
+                endDate: new Date(order.items[0]?.endDate).toLocaleDateString(),
+                totalAmount: order.totalAmount,
+                status: order.status,
+                paymentStatus: order.paymentStatus
+            }));
+            setOrders(mappedOrders);
         } catch (error) {
             console.error("Failed to fetch orders", error);
-            // Mock Data
-            setOrders([
-                {
-                    _id: "1",
-                    orderId: "ORD-V-001",
-                    productName: "Sony A7III Camera Kit",
-                    customerName: "John Doe",
-                    startDate: "2024-10-24",
-                    endDate: "2024-10-26",
-                    totalAmount: 4500,
-                    status: "pending",
-                    paymentStatus: "paid"
-                },
-                {
-                    _id: "2",
-                    orderId: "ORD-V-002",
-                    productName: "Camping Tent 4-Person",
-                    customerName: "Jane Smith",
-                    startDate: "2024-11-01",
-                    endDate: "2024-11-05",
-                    totalAmount: 3200,
-                    status: "active",
-                    paymentStatus: "paid"
-                }
-            ]);
+            setOrders([]);
         } finally {
             setIsLoading(false);
         }
@@ -103,6 +91,42 @@ export default function OrderList() {
         return <Badge className={`${styles[status] || "bg-gray-100"} border-none shadow-none capitalize`}>{status}</Badge>;
     };
 
+    const handleExportCSV = () => {
+        if (!orders.length) return;
+
+        // Headers
+        const headers = ["Order ID", "Product", "Customer", "Start Date", "End Date", "Amount", "Status", "Payment Status"];
+
+        // Rows
+        const rows = orders.map(order => [
+            order.orderId,
+            `"${order.productName.replace(/"/g, '""')}"`, // Escape quotes
+            `"${order.customerName.replace(/"/g, '""')}"`,
+            order.startDate,
+            order.endDate,
+            order.totalAmount,
+            order.status,
+            order.paymentStatus
+        ]);
+
+        // Combine
+        const csvContent = [
+            headers.join(","),
+            ...rows.map(row => row.join(","))
+        ].join("\n");
+
+        // Create Blob and Download
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -111,7 +135,9 @@ export default function OrderList() {
                     <p className="text-muted-foreground">Manage your rentals and track order status.</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline">Export CSV</Button>
+                    <Button variant="outline" onClick={handleExportCSV} disabled={orders.length === 0}>
+                        Export CSV
+                    </Button>
                 </div>
             </div>
 
@@ -195,8 +221,10 @@ export default function OrderList() {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem>
-                                                        <Eye className="w-4 h-4 mr-2" /> View Details
+                                                    <DropdownMenuItem asChild>
+                                                        <Link to={`/vendor/orders/${order._id}`} className="cursor-pointer flex items-center w-full">
+                                                            <Eye className="w-4 h-4 mr-2" /> View Details
+                                                        </Link>
                                                     </DropdownMenuItem>
 
                                                     {order.status === 'pending' && (

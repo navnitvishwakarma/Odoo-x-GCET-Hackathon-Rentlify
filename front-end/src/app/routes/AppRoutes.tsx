@@ -11,15 +11,23 @@ import Login from '../pages/auth/Login'; // 🔑 Public Login Page
 import Register from '../pages/auth/Register'; // 📝 Public Registration Page
 import Home from '../pages/customer/Home'; // 🏠 Landing Page
 import { ProfilePage } from '../components/profile-page'; // 👤 User Profile Page
+import Wishlist from '../pages/customer/Wishlist'; // ❤️ Wishlist Page
+import Cart from '../pages/customer/Cart'; // 🛒 Cart Page
+import Checkout from '../pages/customer/Checkout'; // 💳 Checkout Page
+import OrderConfirmation from '../pages/customer/OrderConfirmation'; // ✅ Order Confirmation Page
 
 // Admin/Vendor Pages: Restricted dashboard views
 import AdminDashboard from '../pages/admin/AdminDashboard';
+import AdminVendors from '../pages/admin/AdminVendors';
+import AdminSettings from '../pages/admin/AdminSettings';
 import VendorDashboard from '../pages/vendor/VendorDashboard';
 import ProductList from '../pages/vendor/products/ProductList';
 import ProductForm from '../pages/vendor/products/ProductForm';
 import VendorProductDetails from '../pages/vendor/products/VendorProductDetails';
 import OrderList from '../pages/vendor/orders/OrderList';
+import VendorOrderDetails from '../pages/vendor/orders/VendorOrderDetails';
 import VendorSettings from '../pages/vendor/VendorSettings';
+import VendorInvoices from '../pages/vendor/invoices/VendorInvoices';
 
 // 🔄 Helper component to redirect users based on their role after login
 function RoleRedirect() {
@@ -39,6 +47,10 @@ export default function AppRoutes() {
                 <Route path="/home" element={<Home />} /> {/* 🏠 Home alias */}
                 <Route path="/login" element={<Login />} /> {/* 🔑 Login page */}
                 <Route path="/register" element={<Register />} /> {/* 📝 Register page */}
+                <Route path="/wishlist" element={<Wishlist />} /> {/* ❤️ Wishlist page */}
+                <Route path="/cart" element={<Cart />} /> {/* 🛒 Cart page */}
+                <Route path="/checkout" element={<Checkout />} /> {/* 💳 Checkout page */}
+                <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} /> {/* ✅ Order Confirmation */}
 
                 {/* 🔒 Protected User Routes: Accessible only if logged in (any role) */}
                 <Route element={<ProtectedRoute />}>
@@ -50,6 +62,8 @@ export default function AppRoutes() {
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
                 <Route element={<DashboardLayout role="admin" />}>
                     <Route path="/admin" element={<AdminDashboard />} />
+                    <Route path="/admin/vendors" element={<AdminVendors />} />
+                    <Route path="/admin/settings" element={<AdminSettings />} />
                 </Route>
             </Route>
 
@@ -63,6 +77,8 @@ export default function AppRoutes() {
                     <Route path="/vendor/products/view/:id" element={<VendorProductDetails />} /> {/* 👁️ View Product Details */}
                     <Route path="/vendor/products/edit/:id" element={<ProductForm />} /> {/* ✏️ Edit Product */}
                     <Route path="/vendor/orders" element={<OrderList />} /> {/* 🛒 Order Management */}
+                    <Route path="/vendor/orders/:id" element={<VendorOrderDetails />} /> {/* 👁️ View Order Details */}
+                    <Route path="/vendor/invoices" element={<VendorInvoices />} /> {/* 📄 Invoice Management */}
                     <Route path="/vendor/settings" element={<VendorSettings />} /> {/* ⚙️ Vendor Settings */}
                 </Route>
             </Route>

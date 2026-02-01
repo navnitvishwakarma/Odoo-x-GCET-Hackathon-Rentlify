@@ -12,4 +12,10 @@ router.route('/')
     .get(orderController.getOrders)
     .post(validate(orderValidation.createOrder), orderController.createOrder);
 
+router.route('/:id')
+    .get(orderController.getOrder);
+
+router.route('/:id/status')
+    .patch(orderController.updateOrderStatus);
+
 module.exports = router;

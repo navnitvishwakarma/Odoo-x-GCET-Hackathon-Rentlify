@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const Invoice = require('../models/Invoice');
 const reservationService = require('../services/reservation.service');
 const { successResponse, errorResponse } = require('../utils/response.util');
 
@@ -56,6 +57,53 @@ const createOrder = async (req, res, next) => {
 
         // 3. Create Reservations
         await reservationService.createReservations(orderItems, order[0]._id, session);
+        console.log("Reservations created");
+
+        // 4. Generate Invoices (Group by Vendor)
+        const vendorItems = {};
+        for (const item of orderItems) {
+            const vendorId = item.vendor.toString();
+            if (!vendorItems[vendorId]) {
+                vendorItems[vendorId] = [];
+            }
+            vendorItems[vendorId].push(item);
+        }
+        console.log("Vendor groups:", Object.keys(vendorItems));
+
+        const invoices = [];
+        for (const vendorId of Object.keys(vendorItems)) {
+            const itemsForVendor = vendorItems[vendorId];
+            const subtotal = itemsForVendor.reduce((sum, item) => sum + item.price, 0);
+            const taxAmount = subtotal * 0.18; // Assuming 18% tax
+            const total = subtotal + taxAmount;
+
+            const invoiceItems = await Promise.all(itemsForVendor.map(async (item) => {
+                const product = await Product.findById(item.product);
+                return {
+                    description: product.name,
+                    quantity: item.quantity,
+                    unitPrice: item.price / item.quantity, // Derived unit price
+                    amount: item.price
+                };
+            }));
+
+            invoices.push({
+                invoiceNumber: `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                order: order[0]._id,
+                customer: req.user._id,
+                vendor: vendorId,
+                items: invoiceItems,
+                subtotal: subtotal,
+                taxAmount: taxAmount,
+                totalAmount: total,
+                status: 'paid', // Assuming immediate payment for now
+                dueDate: new Date()
+            });
+        }
+
+        console.log("Creating invoices:", invoices.length);
+        await Invoice.create(invoices, { session });
+        console.log("Invoices created successfully");
 
         await session.commitTransaction();
         session.endSession();
@@ -80,16 +128,86 @@ const getOrders = async (req, res, next) => {
         if (req.user.role === 'customer') {
             filter.customer = req.user._id;
         } else if (req.user.role === 'vendor') {
-            // Complex: find orders containing vendor's items. 
-            // For now, let's just return orders where customer is user, or allow admin to see all.
-            // Vendors need to see orders for THEIR items.
-            // The Order model has items array. We can query { 'items.vendor': req.user.vendorId }
-            // But req.user doesn't have vendorId directly on it, need to fetch Vendor.
-            // I'll skip implementing Vendor view logic in detail for this step, just Admin/Customer.
+            const Vendor = require('../models/Vendor');
+            const vendor = await Vendor.findOne({ user: req.user._id });
+            if (vendor) {
+                filter['items.vendor'] = vendor._id;
+            }
         }
 
-        const orders = await Order.find(filter).populate('items.product').sort({ createdAt: -1 });
+        const orders = await Order.find(filter)
+            .populate('items.product')
+            .populate('customer', 'name email')
+            .sort({ createdAt: -1 });
         successResponse(res, 200, 'Orders list', orders);
+    } catch (error) {
+        next(error);
+    }
+};
+
+const getOrder = async (req, res, next) => {
+    try {
+        const order = await Order.findById(req.params.id)
+            .populate('items.product')
+            .populate('customer', 'name email phone address'); // Add phone/address if available in User model
+
+        if (!order) {
+            return errorResponse(res, 404, 'Order not found');
+        }
+
+        // Access Control
+        if (req.user.role === 'customer') {
+            if (order.customer._id.toString() !== req.user._id.toString()) {
+                return errorResponse(res, 403, 'Forbidden');
+            }
+        } else if (req.user.role === 'vendor') {
+            const Vendor = require('../models/Vendor');
+            const vendor = await Vendor.findOne({ user: req.user._id });
+            const vendorId = vendor._id.toString();
+
+            // Check if vendor has ANY items in this order
+            const hasItems = order.items.some(item => item.vendor.toString() === vendorId);
+            if (!hasItems) {
+                return errorResponse(res, 403, 'Forbidden');
+            }
+
+            // Optional: Filter items strictly for context
+            order.items = order.items.filter(item => item.vendor.toString() === vendorId);
+        }
+
+        successResponse(res, 200, 'Order Details', order);
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+
+const updateOrderStatus = async (req, res, next) => {
+    try {
+        const { status } = req.body;
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return errorResponse(res, 404, 'Order not found');
+        }
+
+        // Logic to validate state transitions can go here
+        // e.g. Pending -> Confirmed -> Active -> Completed/Returned
+
+        order.status = status;
+
+        // Also update items status if needed (simplified)
+        if (status === 'active') {
+            order.items.forEach(item => item.status = 'active');
+        } else if (status === 'returned' || status === 'completed') {
+            order.items.forEach(item => item.status = 'returned');
+            order.status = 'completed'; // Map returned to completed for order level
+        }
+
+        await order.save();
+
+        successResponse(res, 200, 'Order status updated', order);
     } catch (error) {
         next(error);
     }
@@ -98,4 +216,6 @@ const getOrders = async (req, res, next) => {
 module.exports = {
     createOrder,
     getOrders,
+    getOrder,
+    updateOrderStatus
 };

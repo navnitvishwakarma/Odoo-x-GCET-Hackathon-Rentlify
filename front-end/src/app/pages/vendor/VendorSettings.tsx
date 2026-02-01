@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, Lock, Bell, Save } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -10,15 +10,57 @@ import { api } from "@/app/services/api";
 export default function VendorSettings() {
     const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
+    const [profileData, setProfileData] = useState({
+        businessName: '',
+        gstNumber: '',
+        address: { street: '', city: '', state: '', zip: '', country: 'India' },
+        bio: ''
+    });
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const { data } = await api.get('/vendors/me');
+                if (data.data) {
+                    setProfileData({
+                        businessName: data.data.businessName || '',
+                        gstNumber: data.data.gstNumber || '',
+                        address: data.data.address || { street: '', city: '', state: '', zip: '', country: 'India' },
+                        bio: data.data.bio || ''
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to fetch profile", error);
+            }
+        };
+        fetchProfile();
+    }, []);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        if (name.includes('.')) {
+            const [parent, child] = name.split('.');
+            setProfileData(prev => ({
+                ...prev,
+                [parent]: { ...prev[parent as keyof typeof prev] as any, [child]: value }
+            }));
+        } else {
+            setProfileData(prev => ({ ...prev, [name]: value }));
+        }
+    };
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false);
+        try {
+            await api.put('/vendors/me', profileData);
             alert("Settings saved successfully!");
-        }, 1000);
+        } catch (error) {
+            console.error("Failed to update profile", error);
+            alert("Failed to save settings. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -53,21 +95,28 @@ export default function VendorSettings() {
                             <form onSubmit={handleSave} className="space-y-4">
                                 <div className="grid gap-2">
                                     <label className="text-sm font-medium">Business Name</label>
-                                    <Input defaultValue={`${user?.name}'s Business`} />
+                                    <Input name="businessName" value={profileData.businessName} onChange={handleChange} />
                                 </div>
                                 <div className="grid gap-2">
-                                    <label className="text-sm font-medium">Contact Email</label>
-                                    <Input defaultValue={user?.email} disabled />
-                                    <p className="text-xs text-muted-foreground">Contact support to change email.</p>
+                                    <label className="text-sm font-medium">GST Number</label>
+                                    <Input name="gstNumber" value={profileData.gstNumber} onChange={handleChange} placeholder="GSTIN" />
                                 </div>
                                 <div className="grid gap-2">
-                                    <label className="text-sm font-medium">Phone Number</label>
-                                    <Input defaultValue="+91 98765 43210" />
+                                    <label className="text-sm font-medium">Bio</label>
+                                    <Input name="bio" value={profileData.bio} onChange={handleChange} placeholder="Tell us about your business" />
                                 </div>
-                                <div className="grid gap-2">
-                                    <label className="text-sm font-medium">Business Address</label>
-                                    <Input defaultValue="123 Market Street, City, State" />
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <label className="text-sm font-medium">City</label>
+                                        <Input name="address.city" value={profileData.address.city} onChange={handleChange} />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <label className="text-sm font-medium">State</label>
+                                        <Input name="address.state" value={profileData.address.state} onChange={handleChange} />
+                                    </div>
                                 </div>
+
                                 <div className="flex justify-end">
                                     <Button type="submit" disabled={isLoading}>
                                         {isLoading ? "Saving..." : "Save Changes"}
@@ -87,25 +136,9 @@ export default function VendorSettings() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <form onSubmit={handleSave} className="space-y-4">
-                                <div className="grid gap-2">
-                                    <label className="text-sm font-medium">Current Password</label>
-                                    <Input type="password" />
-                                </div>
-                                <div className="grid gap-2">
-                                    <label className="text-sm font-medium">New Password</label>
-                                    <Input type="password" />
-                                </div>
-                                <div className="grid gap-2">
-                                    <label className="text-sm font-medium">Confirm New Password</label>
-                                    <Input type="password" />
-                                </div>
-                                <div className="flex justify-end">
-                                    <Button type="submit" disabled={isLoading}>
-                                        Update Password
-                                    </Button>
-                                </div>
-                            </form>
+                            <div className="text-sm text-muted-foreground p-4 bg-muted rounded">
+                                Password updates are currently disabled. Please contact support.
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>

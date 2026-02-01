@@ -11,12 +11,11 @@ if (result.error) {
     dotenv.config({ path: path.join(__dirname, '.env') });
 }
 
+const connectDB = require('./src/config/db');
+
 const createAdmin = async () => {
     try {
-        const mongoUrl = process.env.MONGODB_URL || 'mongodb://127.0.0.1:27017/rentlify';
-        console.log('Connecting to MongoDB...', mongoUrl.replace(/:([^:@]+)@/, ':****@')); // Mask password
-
-        await mongoose.connect(mongoUrl);
+        await connectDB();
         console.log('Connected to MongoDB');
 
         const adminEmail = 'admin@rentlify.com';
@@ -25,12 +24,13 @@ const createAdmin = async () => {
         if (existingAdmin) {
             console.log('Admin user already exists:', adminEmail);
             console.log('Role:', existingAdmin.role);
-            if (existingAdmin.role !== 'admin') {
-                console.log('User exists but not admin. Updating role...');
-                existingAdmin.role = 'admin';
-                await existingAdmin.save();
-                console.log('Role updated to admin.');
-            }
+
+            // Force update password and ensure role is admin
+            existingAdmin.password = 'admin123';
+            existingAdmin.role = 'admin';
+            await existingAdmin.save();
+            console.log('Admin credentials updated (Password: admin123, Role: admin)');
+
             process.exit(0);
         }
 

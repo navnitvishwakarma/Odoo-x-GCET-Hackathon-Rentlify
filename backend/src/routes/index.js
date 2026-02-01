@@ -5,6 +5,8 @@ const productRoute = require('./product.routes');
 const quotationRoute = require('./quotation.routes');
 const orderRoute = require('./order.routes');
 const invoiceRoute = require('./invoice.routes');
+const adminRoute = require('./admin.routes');
+const cartRoute = require('./cart.routes');
 
 const router = express.Router();
 
@@ -12,6 +14,10 @@ const defaultRoutes = [
     {
         path: '/auth',
         route: authRoute,
+    },
+    {
+        path: '/admin',
+        route: adminRoute,
     },
     {
         path: '/vendors',
@@ -32,6 +38,10 @@ const defaultRoutes = [
     {
         path: '/invoices',
         route: invoiceRoute,
+    },
+    {
+        path: '/cart',
+        route: cartRoute,
     },
 ];
 

@@ -7,7 +7,8 @@ import {
     Settings,
     LogOut,
     Store,
-    User
+    User,
+    FileText
 } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 
@@ -23,6 +24,7 @@ export function DashboardSidebar({ role }: SidebarProps) {
         { name: "Overview", href: "/vendor", icon: LayoutDashboard },
         { name: "My Products", href: "/vendor/products", icon: Package },
         { name: "Orders", href: "/vendor/orders", icon: ShoppingBag },
+        { name: "Invoices", href: "/vendor/invoices", icon: FileText },
         { name: "Settings", href: "/vendor/settings", icon: Settings },
     ];
 

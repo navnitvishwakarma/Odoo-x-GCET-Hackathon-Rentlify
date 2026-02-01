@@ -11,20 +11,42 @@ const { successResponse } = require('./utils/response.util');
 const routes = require('./routes');
 
 const app = express();
+const connectDB = require('./config/db');
+
+// Connect to Database immediately when app loads
+// Connect to Database immediately when app loads
+// connectDB(); // Moved to server.js and api/index.js
 
 // Security Middleware
 app.use(helmet());
 
-// CORS Configuration
-// CORS Configuration
-const origin = config.clientUrl && config.clientUrl.includes(',')
-    ? config.clientUrl.split(',')
-    : config.clientUrl;
+// Ignore favicon requests to prevent 500/404 errors in logs
+app.get('/favicon.ico', (req, res) => res.status(204).end());
 
-app.use(cors({
-    origin: origin,
+// CORS Configuration
+// CORS Configuration
+const allowedOrigins = [
+    config.clientUrl,
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://rentlify-frontend.vercel.app',
+    'https://rentlify-bankend-deployment.vercel.app'
+].filter(Boolean); // Remove null/undefined
+
+// Allow all origins in development or if clientUrl is '*'
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.some(o => o.includes(origin)) || config.env === 'development') {
+            callback(null, true);
+        } else {
+            console.log('Blocked by CORS:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Logger
 if (config.env !== 'test') {

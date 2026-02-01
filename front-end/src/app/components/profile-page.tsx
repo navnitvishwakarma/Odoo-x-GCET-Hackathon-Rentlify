@@ -4,11 +4,12 @@ import {
     ArrowRight, ShieldCheck, ChevronLeft, LogOut, Bell, Settings,
     Clock, ExternalLink, Store, TrendingUp, DollarSign, LayoutDashboard
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
 import { Separator } from "@/app/components/ui/separator";
 import { useAuth } from "@/app/context/AuthContext";
+import { api } from "@/app/services/api";
 import { useNavigate } from "react-router-dom";
 
 type Section = "overview" | "rentals" | "orders" | "payments" | "addresses" | "wishlist"
@@ -145,7 +146,27 @@ export function ProfilePage({ onBack, onTrackOrder }: { onBack?: () => void; onT
 // but since this is a full file replace, I must provide all code. 
 // For efficiency, I will include the missing Vendor components and re-declare customer ones.]
 
+// Reusing stats from dashboard for consistency
 function VendorOverview() {
+    const [stats, setStats] = useState({
+        earnings: 0,
+        activeOrders: 0,
+        products: 0,
+        pendingReturns: 0
+    });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const { data } = await api.get('/vendors/stats');
+                setStats(data.data);
+            } catch (error) {
+                console.error("Failed to fetch stats", error);
+            }
+        };
+        fetchStats();
+    }, []);
+
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
             <div className="flex justify-between items-center">
@@ -157,9 +178,9 @@ function VendorOverview() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
-                    { label: "Total Revenue", value: "₹1,24,000", sub: "+12% from last month", icon: DollarSign },
-                    { label: "Active Orders", value: "8", sub: "3 pending delivery", icon: Package },
-                    { label: "Total Products", value: "45", sub: "5 low stock", icon: Store },
+                    { label: "Total Revenue", value: `₹${stats.earnings}`, sub: "All time earnings", icon: DollarSign },
+                    { label: "Active Orders", value: stats.activeOrders.toString(), sub: `${stats.pendingReturns} pending returns`, icon: Package },
+                    { label: "Total Products", value: stats.products.toString(), sub: "Listed in inventory", icon: Store },
                 ].map((stat, i) => (
                     <div key={i} className="p-8 rounded-3xl bg-card border border-border space-y-4 hover:shadow-xl transition-all">
                         <div className="p-3 bg-secondary/50 rounded-2xl w-fit">
@@ -178,6 +199,23 @@ function VendorOverview() {
 }
 
 function VendorBusinessInfo() {
+    const { user } = useAuth();
+    const [profile, setProfile] = useState<any>(null);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const { data } = await api.get('/vendors/me');
+                setProfile(data.data);
+            } catch (error) {
+                console.error("Failed to fetch profile", error);
+            }
+        };
+        fetchProfile();
+    }, []);
+
+    if (!profile) return <div>Loading profile...</div>;
+
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
             <h1 className="text-4xl tracking-tight">Business Profile</h1>
@@ -185,22 +223,24 @@ function VendorBusinessInfo() {
                 <div className="grid md:grid-cols-2 gap-8">
                     <div className="space-y-2">
                         <label className="text-xs uppercase tracking-widest text-muted-foreground">Company Name</label>
-                        <p className="text-xl font-medium">Rentlify Furniture Solutions</p>
+                        <p className="text-xl font-medium">{profile.businessName || "Not set"}</p>
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs uppercase tracking-widest text-muted-foreground">Business Email</label>
-                        <p className="text-xl font-medium">vendor@rentlify.com</p>
+                        <p className="text-xl font-medium">{user?.email}</p>
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs uppercase tracking-widest text-muted-foreground">GSTIN</label>
-                        <p className="text-xl font-medium">27AAAAA0000A1Z5</p>
+                        <p className="text-xl font-medium">{profile.gstNumber || "Not provided"}</p>
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs uppercase tracking-widest text-muted-foreground">Registered Address</label>
-                        <p className="text-lg text-muted-foreground">123 Business Park, Andheri East, Mumbai, MH</p>
+                        <p className="text-lg text-muted-foreground">
+                            {[profile.address?.street, profile.address?.city, profile.address?.state].filter(Boolean).join(", ") || "No address set"}
+                        </p>
                     </div>
                 </div>
-                <Button variant="outline">Edit Details</Button>
+                {/* <Button variant="outline">Edit Details</Button> */}
             </div>
         </motion.div>
     )
@@ -216,7 +256,7 @@ function VendorInventory() {
             <div className="rounded-3xl border border-border overflow-hidden">
                 <div className="p-12 text-center text-muted-foreground">
                     <Package className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                    <p>Manage your product listings here.</p>
+                    <p>Manage your product listings from the Dashboard.</p>
                 </div>
             </div>
         </motion.div>

@@ -13,7 +13,7 @@ import {
 import { useState } from "react";
 
 interface CartItem {
-    id: number;
+    id: string | number;
     name: string;
     image: string;
     type: "rent" | "buy";
@@ -23,47 +23,29 @@ interface CartItem {
     deposit?: number;
 }
 
-const initialItems: CartItem[] = [
-    {
-        id: 1,
-        name: "Gaming Laptop Pro",
-        image: "https://images.unsplash.com/photo-1673431738089-c4fc9c2e96a7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-        type: "rent",
-        price: 3500,
-        duration: "6",
-        quantity: 1,
-        deposit: 2500,
-    },
-    {
-        id: 2,
-        name: "Premium Audio Speaker",
-        image: "https://images.unsplash.com/photo-1758411898478-4f7e70d533d9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
-        type: "buy",
-        price: 12500,
-        quantity: 1,
-    },
-];
 
-export function CartPage({ items, onUpdateItems, onBack, onCheckout }: {
+
+export function CartPage({ items, onUpdateQuantity, onRemoveItem, onUpdateDuration, onBack, onCheckout }: {
     items: CartItem[];
-    onUpdateItems: (items: CartItem[]) => void;
+    onUpdateQuantity: (id: string | number, quantity: number) => void;
+    onRemoveItem: (id: string | number) => void;
+    onUpdateDuration?: (id: string | number, duration: string) => void;
     onBack: () => void;
     onCheckout?: () => void
 }) {
-    const updateQuantity = (id: number, delta: number) => {
-        onUpdateItems(items.map(item =>
-            item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-        ));
+    const updateQuantity = (id: string | number, delta: number) => {
+        const item = items.find(i => i.id === id);
+        if (item) {
+            onUpdateQuantity(id, Math.max(1, item.quantity + delta));
+        }
     };
 
-    const removeItem = (id: number) => {
-        onUpdateItems(items.filter(item => item.id !== id));
+    const removeItem = (id: string | number) => {
+        onRemoveItem(id);
     };
 
-    const updateDuration = (id: number, duration: string) => {
-        onUpdateItems(items.map(item =>
-            item.id === id ? { ...item, duration } : item
-        ));
+    const updateDuration = (id: string | number, duration: string) => {
+        if (onUpdateDuration) onUpdateDuration(id, duration);
     };
 
     const monthlyTotal = items

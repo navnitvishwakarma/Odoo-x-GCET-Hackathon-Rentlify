@@ -7,23 +7,15 @@ import { api } from "@/app/services/api";
 import { forwardRef } from "react";
 import { FilterState } from "./filter-sidebar";
 
-interface Product {
-  id: string; // Changed from number to string for MongoDB ObjectId
-  name: string;
-  category: string;
-  image: string;
-  hourlyPrice: number;
-  dailyPrice: number;
-  weeklyPrice: number;
-  condition: string;
-}
+import { Product } from "@/app/types/product.types";
 
 const ProductCard = forwardRef<HTMLDivElement, {
   product: Product,
   onClick?: () => void,
   onWishlistClick?: (product: Product) => void,
-  onAddToCart?: (product: Product) => void
-}>(({ product, onClick, onWishlistClick, onAddToCart }, ref) => {
+  onAddToCart?: (product: Product) => void,
+  onRentNow?: (product: Product) => void
+}>(({ product, onClick, onWishlistClick, onAddToCart, onRentNow }, ref) => {
   const [isLiked, setIsLiked] = useState(false);
   const [showActions, setShowActions] = useState(false);
 
@@ -83,7 +75,8 @@ const ProductCard = forwardRef<HTMLDivElement, {
               whileTap={{ scale: 0.98 }}
               onClick={(e) => {
                 e.stopPropagation();
-                onClick?.();
+                e.stopPropagation();
+                onRentNow?.(product);
               }}
               className="w-full py-2.5 bg-primary text-primary-foreground rounded-full transition-all shadow-lg text-sm font-medium"
             >
@@ -114,15 +107,15 @@ const ProductCard = forwardRef<HTMLDivElement, {
           <div className="grid grid-cols-3 gap-3 pt-2">
             <div>
               <p className="text-xs text-muted-foreground">Hourly</p>
-              <p className="text-base font-semibold">₹{product.hourlyPrice}</p>
+              <p className="text-base font-semibold">₹{product.pricing?.hourly || 0}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Daily</p>
-              <p className="text-base font-semibold">₹{product.dailyPrice}</p>
+              <p className="text-base font-semibold">₹{product.pricing?.daily || 0}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Weekly</p>
-              <p className="text-base font-semibold">₹{product.weeklyPrice}</p>
+              <p className="text-base font-semibold">₹{product.pricing?.weekly || 0}</p>
             </div>
           </div>
         </div>
@@ -132,11 +125,12 @@ const ProductCard = forwardRef<HTMLDivElement, {
 });
 ProductCard.displayName = "ProductCard";
 
-export function ProductShowcase({ filters, onProductClick, onWishlistClick, onAddToCart }: {
+export function ProductShowcase({ filters, onProductClick, onWishlistClick, onAddToCart, onRentNow }: {
   filters: FilterState,
   onProductClick?: () => void,
   onWishlistClick?: (product: any) => void,
-  onAddToCart?: (product: any) => void
+  onAddToCart?: (product: any) => void,
+  onRentNow?: (product: any) => void
 }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,13 +150,11 @@ export function ProductShowcase({ filters, onProductClick, onWishlistClick, onAd
         const productsList = response.data.data || [];
 
         const mappedProducts = productsList.map((p: any) => ({
-          id: p._id || p.id,
+          _id: p._id || p.id,
           name: p.name,
-          category: p.category,
-          image: p.images?.[0] || 'https://via.placeholder.com/300',
-          hourlyPrice: p.pricing?.hourly || 0,
-          dailyPrice: p.pricing?.daily || 0,
-          weeklyPrice: p.pricing?.weekly || 0,
+          category: p.category, // Assuming category is top level
+          image: p.images?.[0] || p.image || 'https://via.placeholder.com/300',
+          pricing: p.pricing || { hourly: 0, daily: 0, weekly: 0, deposit: 0 },
           condition: p.attributes?.find((a: any) => a.key === 'Condition')?.value || 'New'
         }));
 
@@ -185,12 +177,13 @@ export function ProductShowcase({ filters, onProductClick, onWishlistClick, onAd
     }
 
     // Price Filter (Using daily price as a proxy for the range)
-    if (product.dailyPrice < filters.minPrice || product.dailyPrice > filters.maxPrice) {
+    const price = product.pricing?.daily || product.dailyPrice || 0;
+    if (price < filters.minPrice || price > filters.maxPrice) {
       return false;
     }
 
     // Condition Filter
-    if (filters.conditions.length > 0 && !filters.conditions.includes(product.condition)) {
+    if (product.condition && filters.conditions.length > 0 && !filters.conditions.includes(product.condition)) {
       return false;
     }
 
@@ -253,11 +246,12 @@ export function ProductShowcase({ filters, onProductClick, onWishlistClick, onAd
             <AnimatePresence mode="popLayout">
               {filteredProducts.map((product) => (
                 <ProductCard
-                  key={product.id}
+                  key={product._id}
                   product={product}
                   onClick={onProductClick}
                   onWishlistClick={onWishlistClick}
                   onAddToCart={() => onAddToCart?.(product)}
+                  onRentNow={() => onRentNow?.(product)}
                 />
               ))}
             </AnimatePresence>
