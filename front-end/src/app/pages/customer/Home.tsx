@@ -1,22 +1,30 @@
 import { HeroSection } from "@/app/components/hero-section";
 import { CategorySection } from "@/app/components/category-section";
 import { BrowseSection } from "@/app/components/browse-section";
-import { Link, useNavigate } from "react-router-dom";
-import { useState, useRef } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
 import { FilterState } from "@/app/components/filter-sidebar";
 import { useCart } from "@/app/context/CartContext";
 
 export default function Home() {
+    const [searchParams] = useSearchParams();
     const [filters, setFilters] = useState<FilterState>({
         categories: [],
         minPrice: 0,
-        maxPrice: 10000,
+        maxPrice: 100000,
         duration: "Any",
         conditions: [],
+        searchQuery: searchParams.get("search") || ""
     });
 
     const { addToCart } = useCart();
     const navigate = useNavigate();
+
+    // Update filters when URL search param changes
+    useEffect(() => {
+        const query = searchParams.get("search") || "";
+        setFilters(prev => ({ ...prev, searchQuery: query }));
+    }, [searchParams]);
 
     // Browse Ref for scrolling
     const browseRef = useRef<HTMLDivElement>(null);

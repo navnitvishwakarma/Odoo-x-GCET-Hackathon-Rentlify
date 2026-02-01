@@ -140,10 +140,13 @@ export function ProductShowcase({ filters, onProductClick, onWishlistClick, onAd
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        // Assuming the API returns { data: { products: [...] } } or similar standard response
-        // Need to verify backend response structure. Usually it's data.results or just data.
-        // I'll assume standard { data: [...] } or { results: [...] } based on common patterns.
-        const response = await api.get('/products');
+        // Pass search query if it exists
+        const params: any = {};
+        if (filters.searchQuery) {
+          params.search = filters.searchQuery;
+        }
+
+        const response = await api.get('/products', { params });
 
         // Map backend data to frontend model
         // successResponse returns { success: true, data: [...] }
@@ -168,7 +171,7 @@ export function ProductShowcase({ filters, onProductClick, onWishlistClick, onAd
     };
 
     fetchProducts();
-  }, []);
+  }, [filters.searchQuery]);
 
   const filteredProducts = products.filter((product) => {
     // Category Filter
@@ -177,7 +180,7 @@ export function ProductShowcase({ filters, onProductClick, onWishlistClick, onAd
     }
 
     // Price Filter (Using daily price as a proxy for the range)
-    const price = product.pricing?.daily || product.dailyPrice || 0;
+    const price = product.pricing?.daily || 0;
     if (price < filters.minPrice || price > filters.maxPrice) {
       return false;
     }

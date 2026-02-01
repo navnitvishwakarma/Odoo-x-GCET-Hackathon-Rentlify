@@ -36,6 +36,7 @@ export function Header({ cartCount, wishlistCount }: {
 
   const [locationName, setLocationName] = useState("Select Location");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   return (
     <>
@@ -61,6 +62,13 @@ export function Header({ cartCount, wishlistCount }: {
                 type="search"
                 placeholder="Search premium furniture..."
                 className="w-full h-11 pl-12 bg-secondary/50 border-none rounded-full focus:ring-2 focus:ring-primary/20 transition-all"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    navigate(`/home?search=${encodeURIComponent(searchQuery)}`);
+                  }
+                }}
               />
             </div>
           </div>

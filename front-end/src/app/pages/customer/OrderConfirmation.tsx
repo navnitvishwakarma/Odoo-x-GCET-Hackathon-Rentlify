@@ -6,6 +6,8 @@ import { Button } from "@/app/components/ui/button";
 import { Separator } from "@/app/components/ui/separator";
 import { api } from "@/app/services/api";
 import { toast } from "sonner";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function OrderConfirmation() {
     const { orderId } = useParams();
@@ -13,6 +15,73 @@ export default function OrderConfirmation() {
     const [order, setOrder] = useState<any>(null);
     const [invoices, setInvoices] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const handleDownloadInvoice = (invoice: any) => {
+        try {
+            const doc = new jsPDF();
+
+            // Header
+            doc.setFontSize(20);
+            doc.text("INVOICE", 105, 20, { align: "center" });
+
+            doc.setFontSize(10);
+            doc.text(`Invoice #: ${invoice.invoiceNumber}`, 14, 30);
+            doc.text(`Date: ${format(new Date(invoice.createdAt), 'PPP')}`, 14, 35);
+            doc.text(`Status: ${invoice.status}`, 14, 40);
+
+            // Vendor Details (From)
+            doc.setFontSize(12);
+            doc.text("From:", 14, 50);
+            doc.setFontSize(10);
+            doc.text(invoice.vendor?.businessName || invoice.vendor?.name || 'Vendor', 14, 55);
+            doc.text(invoice.vendor?.email || '', 14, 60);
+            if (invoice.vendor?.gstNumber) {
+                doc.text(`GSTIN: ${invoice.vendor.gstNumber}`, 14, 65);
+            }
+
+            // Customer Details (To)
+            doc.setFontSize(12);
+            doc.text("To:", 105, 50);
+            doc.setFontSize(10);
+            doc.text(invoice.customer?.name || 'Customer', 105, 55);
+            doc.text(invoice.customer?.email || '', 105, 60);
+            if (invoice.customer?.gstNumber) {
+                doc.text(`GSTIN: ${invoice.customer.gstNumber}`, 105, 65);
+            }
+
+            // Items Table
+            const tableRows = invoice.items.map((item: any) => [
+                item.product?.name || 'Item',
+                item.quantity,
+                `Rs. ${item.price}`,
+                `Rs. ${item.quantity * item.price}`
+            ]);
+
+            autoTable(doc, {
+                startY: 75,
+                head: [['Item', 'Qty', 'Price', 'Total']],
+                body: tableRows,
+            });
+
+            // Summary
+            const finalY = (doc as any).lastAutoTable.finalY + 10;
+
+            doc.text(`Subtotal: Rs. ${invoice.subtotal.toLocaleString()}`, 140, finalY);
+            doc.text(`Tax (18% GST): Rs. ${invoice.taxAmount.toLocaleString()}`, 140, finalY + 5);
+            doc.setFontSize(12);
+            doc.text(`Total: Rs. ${invoice.totalAmount.toLocaleString()}`, 140, finalY + 12);
+
+            // Footer
+            doc.setFontSize(8);
+            doc.text("Thank you for your business!", 105, 280, { align: "center" });
+
+            doc.save(`Invoice_${invoice.invoiceNumber}.pdf`);
+            toast.success("Invoice downloaded successfully");
+        } catch (error) {
+            console.error("Download failed", error);
+            toast.error("Failed to download invoice");
+        }
+    };
 
     useEffect(() => {
         if (!orderId) return;
@@ -102,10 +171,18 @@ export default function OrderConfirmation() {
                                         <span>•</span>
                                         <span>{format(new Date(inv.createdAt), 'MMM dd, yyyy')}</span>
                                     </div>
+                                    <div className="text-[10px] text-muted-foreground mt-1">
+                                        {inv.vendor?.gstNumber ? `GSTIN: ${inv.vendor.gstNumber} • ` : ''} Includes 18% GST
+                                    </div>
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <span className="font-medium">₹{inv.totalAmount.toLocaleString()}</span>
-                                    <Button variant="outline" size="sm" className="gap-2 h-9">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-2 h-9"
+                                        onClick={() => handleDownloadInvoice(inv)}
+                                    >
                                         <Download className="w-4 h-4" /> Download
                                     </Button>
                                 </div>

@@ -19,6 +19,7 @@ import {
     TableRow
 } from "@/app/components/ui/table";
 import { Badge } from "@/app/components/ui/badge";
+import { InvoiceDetailsDialog } from "./InvoiceDetailsDialog";
 
 export default function VendorInvoices() {
     const [invoices, setInvoices] = useState<any[]>([]);
@@ -35,8 +36,12 @@ export default function VendorInvoices() {
             if (data.success) {
                 setInvoices(data.data);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to fetch invoices", error);
+            const msg = error.response?.data?.message || "Failed to load invoices";
+            // Show toast so user knows SOMETHING failed
+            // assuming toast is imported or available, if not, we use alert for desperate debugging
+            alert(`Debug Error: ${msg}`);
         } finally {
             setLoading(false);
         }
@@ -46,6 +51,8 @@ export default function VendorInvoices() {
         inv.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         inv.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
 
     return (
         <div className="space-y-6">
@@ -133,7 +140,12 @@ export default function VendorInvoices() {
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="sm" className="gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="gap-2"
+                                            onClick={() => setSelectedInvoice(invoice)}
+                                        >
                                             View <ArrowUpRight className="w-4 h-4" />
                                         </Button>
                                     </TableCell>
@@ -143,6 +155,12 @@ export default function VendorInvoices() {
                     </TableBody>
                 </Table>
             </div>
+
+            <InvoiceDetailsDialog
+                invoice={selectedInvoice}
+                open={!!selectedInvoice}
+                onOpenChange={(open) => !open && setSelectedInvoice(null)}
+            />
         </div>
     );
 }

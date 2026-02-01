@@ -13,6 +13,7 @@ export interface FilterState {
   maxPrice: number;
   duration: string;
   conditions: string[];
+  searchQuery?: string;
 }
 
 interface FilterSidebarProps {
@@ -130,7 +131,7 @@ export function FilterSidebar({ filters, onFilterChange }: FilterSidebarProps) {
                 <input
                   type="range"
                   min="0"
-                  max="10000"
+                  max="100000"
                   step="100"
                   value={filters.maxPrice}
                   onChange={(e) => onFilterChange({ ...filters, maxPrice: parseInt(e.target.value) })}
@@ -256,7 +257,7 @@ export function FilterSidebar({ filters, onFilterChange }: FilterSidebarProps) {
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => onFilterChange({ categories: [], minPrice: 0, maxPrice: 10000, duration: "Any", conditions: [] })}
+          onClick={() => onFilterChange({ categories: [], minPrice: 0, maxPrice: 100000, duration: "Any", conditions: [] })}
           className="w-full py-4 bg-secondary text-foreground hover:bg-secondary/70 rounded-2xl transition-all text-sm font-medium tracking-tight"
         >
           Reset All Filters
