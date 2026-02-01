@@ -117,7 +117,13 @@ export default function Checkout() {
             }
         } catch (error: any) {
             console.error("Checkout failed", error);
-            toast.error(error.response?.data?.message || "Failed to place order");
+            const errorMessage = error.response?.data?.message || "Failed to place order";
+
+            if (error.response?.status === 400 || errorMessage.includes("Product not found") || errorMessage.includes("not available")) {
+                toast.error(`Order Failed: ${errorMessage}. Try clearing your cart.`);
+            } else {
+                toast.error(errorMessage);
+            }
         } finally {
             setLoading(false);
         }

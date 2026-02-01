@@ -81,6 +81,7 @@ export default function VendorInvoices() {
                             <TableHead>Invoice #</TableHead>
                             <TableHead>Date</TableHead>
                             <TableHead>Customer</TableHead>
+                            <TableHead>Products</TableHead>
                             <TableHead>Amount</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
@@ -89,13 +90,13 @@ export default function VendorInvoices() {
                     <TableBody>
                         {loading ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-24 text-center">
+                                <TableCell colSpan={7} className="h-24 text-center">
                                     Loading invoices...
                                 </TableCell>
                             </TableRow>
                         ) : filteredInvoices.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-24 text-center">
+                                <TableCell colSpan={7} className="h-24 text-center">
                                     No invoices found.
                                 </TableCell>
                             </TableRow>
@@ -112,6 +113,15 @@ export default function VendorInvoices() {
                                         <div className="flex flex-col">
                                             <span className="font-medium text-sm">{invoice.customer?.name || "Unknown"}</span>
                                             <span className="text-xs text-muted-foreground">{invoice.customer?.email}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-col gap-1">
+                                            {invoice.items?.map((item: any, idx: number) => (
+                                                <span key={idx} className="text-xs bg-secondary/50 px-2 py-0.5 rounded-sm truncate max-w-[200px] inline-block">
+                                                    {item.quantity}x {item.description}
+                                                </span>
+                                            ))}
                                         </div>
                                     </TableCell>
                                     <TableCell>
